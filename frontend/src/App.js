@@ -724,6 +724,36 @@ function App() {
 
   const isValid = warnings.length === 0 && roster.length > 0;
 
+  /* --- per-category validation report --- */
+  const categoryReport = useMemo(() => {
+    if (!army) return [];
+    return (army.categories || []).map((cat) => {
+      const inCat = computed.filter((c) => c.inst.categoryId === cat.id);
+      if (cat.constraintType === "count") {
+        const n = inCat.length;
+        const ok = n >= (cat.min ?? 0) && (cat.max == null || n <= cat.max);
+        return {
+          id: cat.id,
+          name: cat.name,
+          ok,
+          current: `${n} choice${n === 1 ? "" : "s"}`,
+          allowed: `${cat.min}–${cat.max} choices`,
+        };
+      }
+      const pts = inCat.reduce((s, c) => s + c.calc.total, 0);
+      const minPts = ((cat.min ?? 0) / 100) * maxPoints;
+      const maxPts = ((cat.max ?? 100) / 100) * maxPoints;
+      const ok = pts >= minPts && pts <= maxPts;
+      return {
+        id: cat.id,
+        name: cat.name,
+        ok,
+        current: `${pts} pts`,
+        allowed: `${Math.round(minPts)}–${Math.round(maxPts)} pts (${cat.min}–${cat.max}%)`,
+      };
+    });
+  }, [army, computed, maxPoints]);
+
   /* ---------------------------------------------------------------- */
   if (!data) {
     return (
@@ -799,16 +829,19 @@ function App() {
 
       {/* ---------- Main two-column dashboard ---------- */}
       <main className="no-print max-w-[1400px] mx-auto px-4 md:px-6 mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* ====== LEFT: Catalog ====== */}
+        {/* ====== LEFT: Army Composition ====== */}
         <section data-testid="catalog-panel" className="min-w-0">
           <div className="flex items-center gap-2 mb-4">
             <Users size={18} className="text-slate-400" />
             <h2 className="font-display text-lg font-bold tracking-wide text-slate-200">
-              Available Troop Catalog
+              Army Composition
             </h2>
           </div>
 
-          <div className="space-y-5">
+          {/* Category constraints table */}
+          <ConstraintsTable categories={army?.categories || []} maxPoints={maxPoints} />
+
+          <div className="space-y-5 mt-5">
             {(army?.categories || []).map((cat) => (
               <CatalogCategory
                 key={cat.id}
@@ -918,6 +951,11 @@ function App() {
                 />
               ))}
             </div>
+          )}
+
+          {/* Category validation report */}
+          {roster.length > 0 && (
+            <CategoryReport report={categoryReport} />
           )}
         </section>
       </main>
@@ -1145,6 +1183,14 @@ function RosterRow({
           {allyName && inst.categoryId === "allies" && (
             <span className="font-cond text-[11px] text-emerald-500/80">{allyName}</span>
           )}
+          {inst.description && (
+            <p
+              data-testid={`unit-description-${inst.instanceId}`}
+              className="font-body text-xs text-slate-400 mt-1 max-w-md"
+            >
+              {inst.description}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-1 no-print">
@@ -1256,6 +1302,84 @@ function RosterRow({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function ConstraintsTable({ categories, maxPoints }) {
+  if (!categories.length) return null;
+  return (
+    <div data-testid="constraints-table" className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
+      <div className="px-4 py-2.5 bg-slate-900/70 border-b border-slate-800">
+        <h3 className="font-display text-sm font-bold tracking-wide text-slate-300 uppercase">
+          Category Constraints
+        </h3>
+      </div>
+      <table className="w-full text-left font-cond text-sm">
+        <thead>
+          <tr className="text-slate-500 text-[11px] uppercase tracking-widest border-b border-slate-800">
+            <th className="px-4 py-2 font-semibold">Category</th>
+            <th className="px-4 py-2 font-semibold">Type</th>
+            <th className="px-4 py-2 font-semibold text-right">Limit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {categories.map((cat) => {
+            const limit =
+              cat.constraintType === "percentage"
+                ? `${cat.min}–${cat.max}% (${Math.round(((cat.min ?? 0) / 100) * maxPoints)}–${Math.round(
+                    ((cat.max ?? 100) / 100) * maxPoints
+                  )} pts)`
+                : `${cat.min}–${cat.max} choices`;
+            return (
+              <tr key={cat.id} className="border-b border-slate-800/60 last:border-0">
+                <td className="px-4 py-2 text-slate-200 font-semibold">{cat.name}</td>
+                <td className="px-4 py-2 text-slate-400 capitalize">{cat.constraintType}</td>
+                <td className="px-4 py-2 text-right text-slate-300">{limit}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function CategoryReport({ report }) {
+  if (!report.length) return null;
+  return (
+    <div data-testid="category-report" className="mt-6">
+      <h3 className="font-display text-sm font-bold tracking-wide text-slate-300 uppercase mb-2">
+        Category Validation Report
+      </h3>
+      <div className="space-y-2">
+        {report.map((r) => (
+          <div
+            key={r.id}
+            data-testid={`category-report-${r.id}`}
+            className={`rounded-lg border px-4 py-2.5 flex items-center justify-between gap-3 font-cond text-sm ${
+              r.ok
+                ? "border-emerald-700/50 bg-emerald-500/10"
+                : "border-red-700/50 bg-red-500/10"
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {r.ok ? (
+                <ShieldCheck size={16} className="text-emerald-400 shrink-0" />
+              ) : (
+                <AlertTriangle size={16} className="text-red-400 shrink-0" />
+              )}
+              <span className={`font-semibold truncate ${r.ok ? "text-emerald-300" : "text-red-300"}`}>
+                {r.name}
+              </span>
+            </div>
+            <div className="text-right shrink-0">
+              <div className={r.ok ? "text-emerald-200" : "text-red-200"}>{r.current}</div>
+              <div className="text-slate-500 text-[11px]">allowed {r.allowed}</div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
