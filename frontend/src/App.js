@@ -14,6 +14,7 @@ import {
   Crown,
   Users,
   Flag,
+  RefreshCw,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -509,38 +510,51 @@ function computeUnit(inst) {
 function App() {
   const [data, setData] = useState(null);
   const [source, setSource] = useState("loading"); // 'remote' | 'mock'
+  const [loadError, setLoadError] = useState("");
+  const [reloading, setReloading] = useState(false);
   const [selectedArmyKey, setSelectedArmyKey] = useState("");
   const [maxPoints, setMaxPoints] = useState(2000);
   const [roster, setRoster] = useState([]);
   const [checkedAllies, setCheckedAllies] = useState([]); // allied army keys enabled
 
   /* --- load data (remote with graceful fallback) --- */
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  const loadData = async (opts = {}) => {
+    setReloading(true);
+    try {
+      const res = await fetch(DATA_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status + " fetching data file");
+      const text = await res.text();
+      let parsed;
       try {
-        const res = await fetch(DATA_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error("bad status " + res.status);
-        const text = await res.text();
-        const parsed = JSON.parse(text); // malformed remote JSON throws -> fallback
-        if (!parsed || !parsed.armies || typeof parsed.armies !== "object")
-          throw new Error("invalid shape");
-        if (!cancelled) {
-          setData(parsed);
-          setSource("remote");
-          setSelectedArmyKey(Object.keys(parsed.armies)[0] || "");
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setData(MOCK_DATA);
-          setSource("mock");
-          setSelectedArmyKey(Object.keys(MOCK_DATA.armies)[0] || "");
-        }
+        parsed = JSON.parse(text);
+      } catch (pe) {
+        throw new Error("Remote file is not valid JSON — " + pe.message);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      if (!parsed || !parsed.armies || typeof parsed.armies !== "object")
+        throw new Error("Parsed JSON has no valid `armies` object.");
+      setData(parsed);
+      setSource("remote");
+      setLoadError("");
+      if (opts.keepSelection && parsed.armies[selectedArmyKey]) {
+        // keep current selection
+      } else {
+        setSelectedArmyKey(Object.keys(parsed.armies)[0] || "");
+        setRoster([]);
+        setCheckedAllies([]);
+      }
+    } catch (e) {
+      setData((prev) => prev || MOCK_DATA);
+      setSource("mock");
+      setLoadError(e.message || "Failed to load remote data.");
+      setSelectedArmyKey((prev) => prev || Object.keys(MOCK_DATA.armies)[0] || "");
+    } finally {
+      setReloading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const armies = data?.armies || {};
@@ -735,12 +749,31 @@ function App() {
               Swordpoint Army Builder
             </h1>
           </div>
-          <p className="font-cond text-slate-400 text-sm -mt-1">
-            {data.supplement || "Dark Age Armies"} ·{" "}
+          <p className="font-cond text-slate-400 text-sm -mt-1 flex items-center gap-2 flex-wrap justify-center">
+            <span>{data.supplement || "Dark Age Armies"}</span>
+            <span>·</span>
             <span className={source === "remote" ? "text-emerald-400" : "text-amber-400"}>
               {source === "remote" ? "Live data" : "Offline sample data"}
             </span>
+            <button
+              data-testid="reload-json-btn"
+              onClick={() => loadData({ keepSelection: true })}
+              disabled={reloading}
+              className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900 hover:border-emerald-600 hover:text-emerald-300 text-slate-300 px-2.5 py-0.5 text-xs disabled:opacity-40"
+            >
+              <RefreshCw size={12} className={reloading ? "animate-spin" : ""} /> Reload JSON
+            </button>
           </p>
+
+          {loadError && (
+            <div
+              data-testid="load-error"
+              className="w-full max-w-2xl rounded-md border border-amber-700/50 bg-amber-500/10 text-amber-300 px-3 py-1.5 text-xs font-cond flex items-start gap-2"
+            >
+              <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+              <span>Remote data unavailable — using sample data. {loadError}</span>
+            </div>
+          )}
 
           {/* Army dropdown */}
           <div className="flex items-center gap-3 mt-1">
