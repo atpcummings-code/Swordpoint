@@ -968,6 +968,7 @@ function App() {
         maxPoints={maxPoints}
         isValid={isValid}
         warnings={warnings}
+        categoryReport={categoryReport}
       />
     </div>
   );
@@ -1418,7 +1419,7 @@ function IconBtn({ children, onClick, disabled, danger, title, testid }) {
   );
 }
 
-function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warnings }) {
+function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warnings, categoryReport = [] }) {
   return (
     <div className="print-summary" data-testid="print-summary">
       <h1 style={{ fontFamily: "Cinzel, serif", fontSize: "22px", marginBottom: "2px" }}>
@@ -1437,26 +1438,66 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
             <th style={{ padding: "4px" }}>Unit</th>
             <th style={{ padding: "4px" }}>Category</th>
             <th style={{ padding: "4px" }}>Bases</th>
+            <th style={{ padding: "4px" }}>Atk</th>
             <th style={{ padding: "4px" }}>Def</th>
             <th style={{ padding: "4px" }}>Coh</th>
+            <th style={{ padding: "4px" }}>Description</th>
             <th style={{ padding: "4px" }}>Rules</th>
             <th style={{ padding: "4px", textAlign: "right" }}>Points</th>
           </tr>
         </thead>
         <tbody>
-          {computed.map(({ inst, calc }) => (
-            <tr key={inst.instanceId} style={{ borderBottom: "1px solid #cbd5e1" }}>
-              <td style={{ padding: "4px", fontWeight: 600 }}>{inst.name}</td>
-              <td style={{ padding: "4px" }}>{inst.categoryId}</td>
-              <td style={{ padding: "4px" }}>{inst.bases}</td>
-              <td style={{ padding: "4px" }}>{calc.defence ?? "-"}</td>
-              <td style={{ padding: "4px" }}>{calc.cohesion ?? "-"}</td>
-              <td style={{ padding: "4px" }}>{calc.rules.join(", ")}</td>
-              <td style={{ padding: "4px", textAlign: "right", fontWeight: 600 }}>{calc.total}</td>
-            </tr>
-          ))}
+          {computed.map(({ inst, calc }) => {
+            const isCommander = inst.categoryId === "commanders" || inst.type === "General";
+            return (
+              <tr key={inst.instanceId} style={{ borderBottom: "1px solid #cbd5e1", verticalAlign: "top" }}>
+                <td style={{ padding: "4px", fontWeight: 600 }}>{inst.name}</td>
+                <td style={{ padding: "4px" }}>{inst.categoryId}</td>
+                <td style={{ padding: "4px" }}>{inst.bases}</td>
+                <td style={{ padding: "4px" }}>{isCommander ? inst.attacks ?? "-" : "-"}</td>
+                <td style={{ padding: "4px" }}>{calc.defence ?? "-"}</td>
+                <td style={{ padding: "4px" }}>{calc.cohesion ?? "-"}</td>
+                <td style={{ padding: "4px", fontStyle: "italic", color: "#475569", maxWidth: "220px" }}>
+                  {inst.description || "-"}
+                </td>
+                <td style={{ padding: "4px" }}>{calc.rules.join(", ")}</td>
+                <td style={{ padding: "4px", textAlign: "right", fontWeight: 600 }}>{calc.total}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
+
+      {/* Army Validation Report */}
+      {categoryReport.length > 0 && (
+        <div style={{ marginTop: "16px" }}>
+          <h3 style={{ fontFamily: "Cinzel, serif", fontSize: "14px", marginBottom: "4px" }}>
+            Army Validation Report
+          </h3>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid #0f172a", textAlign: "left" }}>
+                <th style={{ padding: "3px" }}>Category</th>
+                <th style={{ padding: "3px" }}>Status</th>
+                <th style={{ padding: "3px" }}>Current</th>
+                <th style={{ padding: "3px" }}>Allowed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categoryReport.map((r) => (
+                <tr key={r.id} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                  <td style={{ padding: "3px", fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ padding: "3px", fontWeight: 700, color: r.ok ? "#059669" : "#dc2626" }}>
+                    {r.ok ? "VALID" : "INVALID"}
+                  </td>
+                  <td style={{ padding: "3px" }}>{r.current}</td>
+                  <td style={{ padding: "3px" }}>{r.allowed}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {!isValid && warnings.length > 0 && (
         <div style={{ marginTop: "12px" }}>
