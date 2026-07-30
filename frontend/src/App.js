@@ -828,9 +828,12 @@ function App() {
       </header>
 
       {/* ---------- Main two-column dashboard ---------- */}
-      <main className="no-print max-w-[1400px] mx-auto px-4 md:px-6 mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <main
+        className="no-print max-w-[1400px] mx-auto px-4 md:px-6 mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6"
+        style={{ height: "100vh", overflow: "hidden" }}
+      >
         {/* ====== LEFT: Army Composition ====== */}
-        <section data-testid="catalog-panel" className="min-w-0">
+        <section data-testid="catalog-panel" className="min-w-0" style={{ height: "100%", overflowY: "auto" }}>
           <div className="flex items-center gap-2 mb-4">
             <Users size={18} className="text-slate-400" />
             <h2 className="font-display text-lg font-bold tracking-wide text-slate-200">
@@ -859,7 +862,7 @@ function App() {
         </section>
 
         {/* ====== RIGHT: Roster ====== */}
-        <section data-testid="roster-panel" className="min-w-0">
+        <section data-testid="roster-panel" className="min-w-0" style={{ height: "100%", overflowY: "auto" }}>
           {/* Sticky roster header */}
           <div className="sticky top-[132px] z-20 mb-4">
             <div
