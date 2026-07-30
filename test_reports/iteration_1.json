@@ -1,0 +1,22 @@
+{
+  "summary": "Frontend-only smoke and regression test of the Swordpoint Army Builder after the normalizeData() and case-insensitive commander/allies detection changes. All 10 requested flows verified end-to-end against the public preview URL. App loaded in 'Live data' mode from the remote GitHub JSON without errors. Header/faction dropdown/left Composition/right Roster panels all rendered. Adding a commander unit shows the A/C/Pts statline (A=3, C=10, PTS=50 for Over King) and adding a Teulu Cavalry shows the D/C/Pts statline (D=4, C=7, PTS=60 at 3 bases). All values render as real NUMBERS (no NaN / blank), confirming the string->number coercion works. bases +/- correctly clamps (disabled at min for a Cavalry at min=3; commander plus disabled at max=1) and updates the live total-points (110/1000 -> 130/1000 on +1 base). Optional equipment toggle (Javelins +1) updates points (130 -> 134 for 4 bases * +1) and Special Rules chips render. Max Points input change to 500 propagates: constraints table now reads '0-33% (0-165 pts)', '0-80% (0-400 pts)', etc., and Total/Limit shows '134 / 500'. validation-panel and category-report render only when the roster is non-empty (correct behavior); category-report renders 5 color-coded category rows (Commanders / Teulu / Tenants / Skirmishers / Allied Contingents). Status badge switches Empty roster -> Valid / Warnings correctly. Switching faction (Welsh -> Vikings) clears the roster (total becomes 0 / <max>). Export Roster to PDF button is present, enabled and calls window.print(). No console errors, no page errors, no NaN in any rendered statline.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "App.js is 1568 lines - consider splitting into modules (components/, helpers/, data/) for maintainability. Not blocking.",
+    "normalizeData() mutates the parsed object in place and does not return a normalized copy for MOCK_DATA fallback path - MOCK_DATA already uses numeric literals so this is fine, but if MOCK_DATA is ever edited with string numerics the fallback branch won't normalize. Consider always calling normalizeData() on whatever dataset is set (both remote and mock)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100%"},
+  "seed_data_creation": "None - purely client-side app, no persistence.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "App is at https://warhammer-composer.preview.emergentagent.com. Remote GitHub JSON loads successfully as 'Live data' (source='remote'). All required data-testids are present: army-select, add-unit-<id>, bases-plus/minus-<instanceId>, max-points-input, total-points, status-badge, validation-panel (only when roster non-empty), category-report (only when roster non-empty), category-report-<catId>, export-pdf-btn, reload-json-btn, roster-row-<instanceId>, equip-<instanceId>-<name>, constraints-table, empty-roster. Note: validation-panel and category-report are intentionally hidden when roster is empty - test after adding at least one unit.",
+  "rca of the issue": "N/A - no issues found. Recent normalizeData() + case-insensitive category matching changes are working as intended; no regressions observed."
+}

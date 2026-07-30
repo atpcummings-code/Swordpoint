@@ -452,6 +452,41 @@ const uid = () =>
 
 const isSkirmRule = (r) => /skirmish/i.test(String(r));
 
+/* Coerce values like "+3", "-8", " 5 " to real numbers; leaves null/undefined alone. */
+const num = (v) => {
+  if (typeof v === "number") return v;
+  if (v == null || v === "") return v;
+  const n = Number(String(v).trim().replace(/^\+/, ""));
+  return Number.isNaN(n) ? v : n;
+};
+
+/* Normalize a parsed dataset: coerce string-typed numeric fields so the app's
+   math works even when the source JSON wraps numbers in quotes (e.g. "+3"). */
+function normalizeData(data) {
+  if (!data || !data.armies) return data;
+  Object.values(data.armies).forEach((army) => {
+    (army.categories || []).forEach((c) => {
+      c.min = num(c.min);
+      c.max = num(c.max);
+      if (c.maxAlliedArmiesAllowed != null) c.maxAlliedArmiesAllowed = num(c.maxAlliedArmiesAllowed);
+    });
+    (army.units || []).forEach((u) => {
+      ["attacks", "defence", "cohesion", "pointsPerBase", "minBases", "maxBases"].forEach((k) => {
+        if (u[k] != null) u[k] = num(u[k]);
+      });
+      (u.optionalEquipment || []).forEach((e) => {
+        ["pointsModifier", "defenceModifier", "cohesionModifier"].forEach((k) => {
+          if (e[k] != null) e[k] = num(e[k]);
+        });
+      });
+    });
+  });
+  return data;
+}
+
+const isCommanderCat = (id) => String(id).toLowerCase() === "commanders";
+const isAlliesCat = (id) => String(id).toLowerCase() === "allies";
+
 function makeInstance(unit, sourceArmyKey, categoryOverride) {
   return {
     instanceId: uid(),
@@ -532,6 +567,7 @@ function App() {
       }
       if (!parsed || !parsed.armies || typeof parsed.armies !== "object")
         throw new Error("Parsed JSON has no valid `armies` object.");
+      normalizeData(parsed);
       setData(parsed);
       setSource("remote");
       setLoadError("");
@@ -1179,13 +1215,13 @@ function RosterRow({
             <span className="font-cond text-[10px] uppercase tracking-widest text-slate-500 bg-slate-800 rounded px-1.5 py-0.5">
               {inst.categoryId}
             </span>
-            {inst.sourceArmyKey && armies[inst.sourceArmyKey] && index >= 0 && inst.categoryId === "allies" && (
+            {inst.sourceArmyKey && armies[inst.sourceArmyKey] && index >= 0 && isAlliesCat(inst.categoryId) && (
               <span className="font-cond text-[10px] uppercase tracking-widest text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 rounded px-1.5 py-0.5">
                 Allied
               </span>
             )}
           </div>
-          {allyName && inst.categoryId === "allies" && (
+          {allyName && isAlliesCat(inst.categoryId) && (
             <span className="font-cond text-[11px] text-emerald-500/80">{allyName}</span>
           )}
           {inst.description && (
@@ -1244,7 +1280,7 @@ function RosterRow({
         </div>
 
         <div className="flex items-center gap-5 font-cond text-sm">
-          {inst.categoryId === "commanders" || inst.type === "General" ? (
+          {isCommanderCat(inst.categoryId) || inst.type === "General" ? (
             <Stat label="A" value={inst.attacks ?? "-"} testid={`unit-attacks-${inst.instanceId}`} />
           ) : (
             <Stat label="D" value={calc.defence ?? "-"} testid={`unit-defence-${inst.instanceId}`} />
@@ -1451,7 +1487,7 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
         </thead>
         <tbody>
           {computed.map(({ inst, calc }) => {
-            const isCommander = inst.categoryId === "commanders" || inst.type === "General";
+            const isCommander = isCommanderCat(inst.categoryId) || inst.type === "General";
             return (
               <React.Fragment key={inst.instanceId}>
                 <tr style={{ verticalAlign: "top" }}>
