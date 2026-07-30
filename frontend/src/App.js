@@ -834,7 +834,7 @@ function App() {
           <div className="flex items-center gap-2 mb-4">
             <Users size={18} className="text-slate-400" />
             <h2 className="font-display text-lg font-bold tracking-wide text-slate-200">
-              Army Composition
+              {army?.armyName || "Army Composition"}
             </h2>
           </div>
 
@@ -1312,7 +1312,7 @@ function ConstraintsTable({ categories, maxPoints }) {
     <div data-testid="constraints-table" className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
       <div className="px-4 py-2.5 bg-slate-900/70 border-b border-slate-800">
         <h3 className="font-display text-sm font-bold tracking-wide text-slate-300 uppercase">
-          Category Constraints
+          Army Composition
         </h3>
       </div>
       <table className="w-full text-left font-cond text-sm">
@@ -1350,7 +1350,7 @@ function CategoryReport({ report }) {
   return (
     <div data-testid="category-report" className="mt-6">
       <h3 className="font-display text-sm font-bold tracking-wide text-slate-300 uppercase mb-2">
-        Category Validation Report
+        Army Validation Report
       </h3>
       <div className="space-y-2">
         {report.map((r) => (
