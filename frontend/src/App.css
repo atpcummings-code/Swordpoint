@@ -1,0 +1,37 @@
+/* Swordpoint Army Builder styles */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap');
+
+.font-display { font-family: 'Cinzel', serif; }
+.font-cond { font-family: 'Barlow Condensed', sans-serif; }
+.font-body { font-family: 'Barlow', sans-serif; }
+
+.sp-app {
+  font-family: 'Barlow', sans-serif;
+  background-color: #020617;
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(16, 185, 129, 0.06), transparent 40%),
+    radial-gradient(circle at 85% 90%, rgba(245, 158, 11, 0.05), transparent 45%);
+  min-height: 100vh;
+}
+
+/* subtle scrollbar for panels */
+.sp-scroll::-webkit-scrollbar { width: 8px; }
+.sp-scroll::-webkit-scrollbar-track { background: #0f172a; }
+.sp-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
+.sp-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* Print / PDF export */
+.print-summary { display: none; }
+
+@media print {
+  @page { margin: 14mm; }
+  html, body { background: #ffffff !important; }
+  .sp-app { background: #ffffff !important; background-image: none !important; }
+  .no-print { display: none !important; }
+  .print-summary {
+    display: block !important;
+    color: #0f172a;
+    font-family: 'Barlow', sans-serif;
+  }
+}

@@ -1,0 +1,1315 @@
+import { useEffect, useMemo, useState } from "react";
+import "@/App.css";
+import {
+  Plus,
+  Minus,
+  Copy,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
+  Printer,
+  ShieldCheck,
+  AlertTriangle,
+  Swords,
+  Crown,
+  Users,
+  Flag,
+} from "lucide-react";
+
+/* ------------------------------------------------------------------ */
+/*  DATA SOURCE                                                        */
+/* ------------------------------------------------------------------ */
+const DATA_URL =
+  "https://raw.githubusercontent.com/atpcummings-code/swordpoint-data/refs/heads/main/dark_ages_armies.json";
+
+/* Fallback dataset — used if the remote fetch fails or returns invalid JSON.
+   Mirrors the Swordpoint: Dark Age Armies schema. */
+const MOCK_DATA = {
+  supplement: "Swordpoint: Dark Age Armies",
+  armies: {
+    early_medieval_welsh: {
+      armyName: "Early Medieval Welsh (800 AD - 1063 AD)",
+      categories: [
+        { id: "commanders", name: "Commanders", constraintType: "count", min: 1, max: 8 },
+        { id: "teulu", name: "Teulu", constraintType: "percentage", min: 0, max: 33 },
+        { id: "tenants", name: "Tenants", constraintType: "percentage", min: 0, max: 80 },
+        { id: "skirmishers", name: "Skirmishers", constraintType: "percentage", min: 0, max: 10 },
+        {
+          id: "allies",
+          name: "Allied Contingents",
+          constraintType: "percentage",
+          min: 0,
+          max: 15,
+          alliedArmyKeys: ["vikings", "anglo_danish"],
+          maxAlliedArmiesAllowed: 1,
+        },
+      ],
+      units: [
+        {
+          id: "welsh_over_king",
+          name: "Over King",
+          description: "Army general. May ride a horse.",
+          category: "commanders",
+          type: "General",
+          attacks: 3,
+          cohesion: 10,
+          pointsPerBase: 50,
+          minBases: 0,
+          maxBases: 1,
+          specialRules: ["Army General"],
+          optionalEquipment: [],
+        },
+        {
+          id: "welsh_king_or_prince",
+          name: "King or Prince",
+          description: "A subordinate commander. May ride a horse.",
+          category: "commanders",
+          type: "General",
+          attacks: 3,
+          cohesion: 9,
+          pointsPerBase: 40,
+          minBases: 0,
+          maxBases: 1,
+          specialRules: [],
+          optionalEquipment: [],
+        },
+        {
+          id: "welsh_local_prince",
+          name: "Sub-King or Local Prince",
+          description: "A minor commander. May ride a horse.",
+          category: "commanders",
+          type: "other",
+          attacks: 2,
+          cohesion: 8,
+          pointsPerBase: 20,
+          minBases: 0,
+          maxBases: 1,
+          specialRules: [],
+          optionalEquipment: [],
+        },
+        {
+          id: "welsh_teulu_cavalry",
+          name: "Teulu Cavalry",
+          description:
+            "Light armour, spear and shield. Superior Fighters. May have javelins (+1).",
+          category: "teulu",
+          type: "other",
+          defence: 4,
+          cohesion: 7,
+          pointsPerBase: 20,
+          minBases: 3,
+          maxBases: 8,
+          specialRules: ["Superior Fighters", "Open Order"],
+          optionalEquipment: [
+            {
+              name: "Javelins",
+              pointsModifier: 1,
+              rulesAdded: [],
+              rulesRemoved: [],
+              defenceModifier: 0,
+              cohesionModifier: 0,
+            },
+          ],
+        },
+        {
+          id: "welsh_teulu_foot",
+          name: "Teulu Foot",
+          description:
+            "Spear and shield. Superior Fighters. Open Order. Warband. May have light armour (+2). May ride horses (+2).",
+          category: "teulu",
+          type: "other",
+          defence: 6,
+          cohesion: 7,
+          pointsPerBase: 15,
+          minBases: 3,
+          maxBases: 8,
+          specialRules: ["Superior Fighters", "Open Order", "Warband"],
+          optionalEquipment: [
+            {
+              name: "Light Armour",
+              pointsModifier: 2,
+              rulesAdded: [],
+              rulesRemoved: [],
+              defenceModifier: -1,
+              cohesionModifier: 0,
+            },
+            {
+              name: "Throwing Spears",
+              pointsModifier: 2,
+              rulesAdded: [],
+              rulesRemoved: [],
+              defenceModifier: 0,
+              cohesionModifier: 0,
+            },
+            {
+              name: "Riding Horses",
+              pointsModifier: 2,
+              rulesAdded: ["Riding Horses"],
+              rulesRemoved: [],
+              defenceModifier: 0,
+              cohesionModifier: 0,
+            },
+          ],
+        },
+        {
+          id: "welsh_tenants_cavalry",
+          name: "Tenant Cavalry",
+          description:
+            "Spear and shield. Evade. May be fielded as Skirmishers, replacing spear with javelins (-2).",
+          category: "tenants",
+          type: "other",
+          defence: 5,
+          cohesion: 6,
+          pointsPerBase: 18,
+          minBases: 3,
+          maxBases: 8,
+          specialRules: ["Evade", "Open Order"],
+          optionalEquipment: [
+            {
+              name: "Skirmishers",
+              pointsModifier: -2,
+              rulesAdded: ["Skirmishers"],
+              rulesRemoved: ["Open Order"],
+              defenceModifier: 0,
+              cohesionModifier: 0,
+            },
+          ],
+        },
+        {
+          id: "welsh_tenants_spearmen",
+          name: "Tenant Foot Spearmen",
+          description: "Spear and shield. Open Order. Warband. May ride horses (+1).",
+          category: "tenants",
+          type: "other",
+          defence: 6,
+          cohesion: 5,
+          pointsPerBase: 9,
+          minBases: 3,
+          maxBases: 12,
+          specialRules: ["Warband", "Open Order"],
+          optionalEquipment: [
+            {
+              name: "Riding Horses",
+              pointsModifier: 1,
+              rulesAdded: ["Riding Horses"],
+              rulesRemoved: [],
+              defenceModifier: 0,
+              cohesionModifier: 0,
+            },
+          ],
+        },
+        {
+          id: "welsh_tenants_archers",
+          name: "Tenant Foot Archers",
+          description:
+            "Bow. Open Order. Warband. May be fielded as Skirmishers (-3). May ride horses (+1).",
+          category: "tenants",
+          type: "other",
+          defence: 7,
+          cohesion: 5,
+          pointsPerBase: 8,
+          minBases: 3,
+          maxBases: 12,
+          specialRules: ["Open Order", "Warband"],
+          optionalEquipment: [
+            {
+              name: "Riding Horses",
+              pointsModifier: 1,
+              rulesAdded: ["Riding Horses"],
+              rulesRemoved: [],
+              defenceModifier: 0,
+              cohesionModifier: 0,
+            },
+            {
+              name: "Skirmishers",
+              pointsModifier: -3,
+              rulesAdded: ["Skirmishers"],
+              rulesRemoved: ["Open Order"],
+              defenceModifier: 0,
+              cohesionModifier: 0,
+            },
+          ],
+        },
+        {
+          id: "welsh_skirmishers",
+          name: "Skirmishers",
+          description: "Javelins. Skirmishers. Inferior Fighters.",
+          category: "skirmishers",
+          type: "other",
+          defence: 7,
+          cohesion: 5,
+          pointsPerBase: 4,
+          minBases: 2,
+          maxBases: 6,
+          specialRules: ["Inferior Fighters", "Skirmishers"],
+          optionalEquipment: [],
+        },
+      ],
+    },
+
+    vikings: {
+      armyName: "Vikings (790 AD - 1085 AD)",
+      categories: [
+        { id: "commanders", name: "Commanders", constraintType: "count", min: 1, max: 6 },
+        { id: "hird", name: "Hird", constraintType: "percentage", min: 0, max: 60 },
+        { id: "bondi", name: "Bondi", constraintType: "percentage", min: 0, max: 75 },
+        { id: "skirmishers", name: "Skirmishers", constraintType: "percentage", min: 0, max: 10 },
+        {
+          id: "allies",
+          name: "Allied Contingents",
+          constraintType: "percentage",
+          min: 0,
+          max: 20,
+          alliedArmyKeys: ["anglo_danish"],
+          maxAlliedArmiesAllowed: 1,
+        },
+      ],
+      units: [
+        {
+          id: "viking_jarl",
+          name: "Jarl",
+          description: "Army general. Fights on foot.",
+          category: "commanders",
+          type: "General",
+          attacks: 3,
+          cohesion: 10,
+          pointsPerBase: 50,
+          minBases: 0,
+          maxBases: 1,
+          specialRules: ["Army General"],
+          optionalEquipment: [],
+        },
+        {
+          id: "viking_hersir",
+          name: "Hersir",
+          description: "A subordinate commander.",
+          category: "commanders",
+          type: "other",
+          attacks: 2,
+          cohesion: 8,
+          pointsPerBase: 25,
+          minBases: 0,
+          maxBases: 1,
+          specialRules: [],
+          optionalEquipment: [],
+        },
+        {
+          id: "viking_hirdmen",
+          name: "Hirdmen",
+          description:
+            "Armoured warriors with Dane axe or spear. Superior Fighters. May be Berserkers (+2).",
+          category: "hird",
+          type: "other",
+          defence: 4,
+          cohesion: 8,
+          pointsPerBase: 18,
+          minBases: 4,
+          maxBases: 12,
+          specialRules: ["Superior Fighters", "Shieldwall"],
+          optionalEquipment: [
+            {
+              name: "Berserkers",
+              pointsModifier: 2,
+              rulesAdded: ["Frenzy"],
+              rulesRemoved: ["Shieldwall"],
+              defenceModifier: 1,
+              cohesionModifier: 0,
+            },
+          ],
+        },
+        {
+          id: "viking_bondi",
+          name: "Bondi",
+          description: "Freemen with spear and shield. Warband.",
+          category: "bondi",
+          type: "other",
+          defence: 5,
+          cohesion: 6,
+          pointsPerBase: 8,
+          minBases: 4,
+          maxBases: 16,
+          specialRules: ["Warband", "Shieldwall"],
+          optionalEquipment: [],
+        },
+        {
+          id: "viking_bowmen",
+          name: "Bowmen Skirmishers",
+          description: "Bow. Skirmishers.",
+          category: "skirmishers",
+          type: "other",
+          defence: 7,
+          cohesion: 5,
+          pointsPerBase: 5,
+          minBases: 2,
+          maxBases: 6,
+          specialRules: ["Skirmishers"],
+          optionalEquipment: [],
+        },
+      ],
+    },
+
+    anglo_danish: {
+      armyName: "Anglo-Danish (1017 AD - 1071 AD)",
+      categories: [
+        { id: "commanders", name: "Commanders", constraintType: "count", min: 1, max: 6 },
+        { id: "huscarls", name: "Huscarls", constraintType: "percentage", min: 0, max: 50 },
+        { id: "fyrd", name: "Fyrd", constraintType: "percentage", min: 0, max: 80 },
+        { id: "skirmishers", name: "Skirmishers", constraintType: "percentage", min: 0, max: 10 },
+      ],
+      units: [
+        {
+          id: "ad_earl",
+          name: "Earl",
+          description: "Army general. Fights on foot.",
+          category: "commanders",
+          type: "General",
+          attacks: 3,
+          cohesion: 10,
+          pointsPerBase: 50,
+          minBases: 0,
+          maxBases: 1,
+          specialRules: ["Army General"],
+          optionalEquipment: [],
+        },
+        {
+          id: "ad_thegn",
+          name: "Thegn",
+          description: "A subordinate commander.",
+          category: "commanders",
+          type: "other",
+          attacks: 2,
+          cohesion: 8,
+          pointsPerBase: 25,
+          minBases: 0,
+          maxBases: 1,
+          specialRules: [],
+          optionalEquipment: [],
+        },
+        {
+          id: "ad_huscarls",
+          name: "Huscarls",
+          description: "Elite Dane axe warriors. Superior Fighters. Shieldwall.",
+          category: "huscarls",
+          type: "other",
+          defence: 3,
+          cohesion: 9,
+          pointsPerBase: 22,
+          minBases: 4,
+          maxBases: 10,
+          specialRules: ["Superior Fighters", "Shieldwall"],
+          optionalEquipment: [],
+        },
+        {
+          id: "ad_select_fyrd",
+          name: "Select Fyrd",
+          description: "Spear and shield. Shieldwall. May have light armour (+2).",
+          category: "fyrd",
+          type: "other",
+          defence: 5,
+          cohesion: 6,
+          pointsPerBase: 9,
+          minBases: 4,
+          maxBases: 16,
+          specialRules: ["Shieldwall"],
+          optionalEquipment: [
+            {
+              name: "Light Armour",
+              pointsModifier: 2,
+              rulesAdded: [],
+              rulesRemoved: [],
+              defenceModifier: -1,
+              cohesionModifier: 0,
+            },
+          ],
+        },
+        {
+          id: "ad_slingers",
+          name: "Slingers",
+          description: "Slings. Skirmishers.",
+          category: "skirmishers",
+          type: "other",
+          defence: 7,
+          cohesion: 5,
+          pointsPerBase: 4,
+          minBases: 2,
+          maxBases: 6,
+          specialRules: ["Skirmishers"],
+          optionalEquipment: [],
+        },
+      ],
+    },
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/*  HELPERS                                                            */
+/* ------------------------------------------------------------------ */
+const uid = () =>
+  (typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : "id-" + Math.random().toString(36).slice(2) + Date.now());
+
+const isSkirmRule = (r) => /skirmish/i.test(String(r));
+
+function makeInstance(unit, sourceArmyKey, categoryOverride) {
+  return {
+    instanceId: uid(),
+    unitId: unit.id,
+    sourceArmyKey,
+    categoryId: categoryOverride || unit.category || (unit.type === "General" ? "commanders" : "other"),
+    name: unit.name,
+    type: unit.type,
+    description: unit.description || "",
+    attacks: unit.attacks,
+    baseDefence: unit.defence ?? null,
+    baseCohesion: unit.cohesion ?? null,
+    basePointsPerBase: unit.pointsPerBase || 0,
+    minBases: unit.minBases ?? 0,
+    maxBases: unit.maxBases ?? 1,
+    bases: Math.max(unit.minBases ?? 0, 1),
+    specialRules: Array.isArray(unit.specialRules) ? [...unit.specialRules] : [],
+    optionalEquipment: Array.isArray(unit.optionalEquipment) ? unit.optionalEquipment : [],
+    equipped: [],
+  };
+}
+
+/* Derive live stats for a roster instance */
+function computeUnit(inst) {
+  const active = inst.optionalEquipment.filter((e) => inst.equipped.includes(e.name));
+  const ppb =
+    inst.basePointsPerBase + active.reduce((s, e) => s + (e.pointsModifier || 0), 0);
+  const defence =
+    inst.baseDefence != null
+      ? inst.baseDefence + active.reduce((s, e) => s + (e.defenceModifier || 0), 0)
+      : null;
+  const cohesion =
+    inst.baseCohesion != null
+      ? inst.baseCohesion + active.reduce((s, e) => s + (e.cohesionModifier || 0), 0)
+      : null;
+
+  let rules = [...inst.specialRules];
+  active.forEach((e) => {
+    (e.rulesRemoved || []).forEach((r) => {
+      rules = rules.filter((x) => x !== r);
+    });
+    (e.rulesAdded || []).forEach((r) => {
+      if (!rules.includes(r)) rules.push(r);
+    });
+  });
+
+  const isSkirm = rules.some(isSkirmRule);
+  const effMax = isSkirm ? Math.min(inst.maxBases, 6) : inst.maxBases;
+  const total = ppb * inst.bases;
+  return { ppb, defence, cohesion, rules, isSkirm, effMax, total, active };
+}
+
+/* ------------------------------------------------------------------ */
+/*  APP                                                                */
+/* ------------------------------------------------------------------ */
+function App() {
+  const [data, setData] = useState(null);
+  const [source, setSource] = useState("loading"); // 'remote' | 'mock'
+  const [selectedArmyKey, setSelectedArmyKey] = useState("");
+  const [maxPoints, setMaxPoints] = useState(2000);
+  const [roster, setRoster] = useState([]);
+  const [checkedAllies, setCheckedAllies] = useState([]); // allied army keys enabled
+
+  /* --- load data (remote with graceful fallback) --- */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(DATA_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error("bad status " + res.status);
+        const text = await res.text();
+        const parsed = JSON.parse(text); // malformed remote JSON throws -> fallback
+        if (!parsed || !parsed.armies || typeof parsed.armies !== "object")
+          throw new Error("invalid shape");
+        if (!cancelled) {
+          setData(parsed);
+          setSource("remote");
+          setSelectedArmyKey(Object.keys(parsed.armies)[0] || "");
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setData(MOCK_DATA);
+          setSource("mock");
+          setSelectedArmyKey(Object.keys(MOCK_DATA.armies)[0] || "");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const armies = data?.armies || {};
+  const army = selectedArmyKey ? armies[selectedArmyKey] : null;
+
+  /* --- army switch: full state cleanup to avoid overlap logic bugs --- */
+  const handleArmyChange = (key) => {
+    setSelectedArmyKey(key);
+    setRoster([]);
+    setCheckedAllies([]);
+  };
+
+  /* --- roster mutations --- */
+  const addUnit = (unit, sourceArmyKey, categoryOverride) => {
+    setRoster((prev) => [...prev, makeInstance(unit, sourceArmyKey, categoryOverride)]);
+  };
+
+  const updateInst = (instanceId, updater) => {
+    setRoster((prev) =>
+      prev.map((i) => (i.instanceId === instanceId ? updater(i) : i))
+    );
+  };
+
+  const changeBases = (instanceId, delta) => {
+    updateInst(instanceId, (i) => {
+      const { effMax } = computeUnit(i);
+      const next = Math.min(Math.max(i.bases + delta, i.minBases || 1), effMax);
+      return { ...i, bases: Math.max(next, 1) };
+    });
+  };
+
+  const toggleEquipment = (instanceId, equipName) => {
+    updateInst(instanceId, (i) => {
+      const has = i.equipped.includes(equipName);
+      const equipped = has
+        ? i.equipped.filter((n) => n !== equipName)
+        : [...i.equipped, equipName];
+      let next = { ...i, equipped };
+      // Skirmisher rule override — hard clamp bases to 6 when activated
+      const { isSkirm, effMax } = computeUnit(next);
+      if (isSkirm && next.bases > 6) next = { ...next, bases: 6 };
+      if (next.bases > effMax) next = { ...next, bases: effMax };
+      return next;
+    });
+  };
+
+  const duplicateUnit = (instanceId) => {
+    setRoster((prev) => {
+      const idx = prev.findIndex((i) => i.instanceId === instanceId);
+      if (idx === -1) return prev;
+      const clone = { ...prev[idx], equipped: [...prev[idx].equipped], instanceId: uid() };
+      const next = [...prev];
+      next.splice(idx + 1, 0, clone);
+      return next;
+    });
+  };
+
+  const moveUnit = (instanceId, dir) => {
+    setRoster((prev) => {
+      const idx = prev.findIndex((i) => i.instanceId === instanceId);
+      const swap = idx + dir;
+      if (idx === -1 || swap < 0 || swap >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[swap]] = [next[swap], next[idx]];
+      return next;
+    });
+  };
+
+  const removeUnit = (instanceId) => {
+    setRoster((prev) => prev.filter((i) => i.instanceId !== instanceId));
+  };
+
+  /* --- allied faction toggle --- */
+  const alliesCategory = army?.categories?.find((c) => Array.isArray(c.alliedArmyKeys));
+  const maxAllies = alliesCategory?.maxAlliedArmiesAllowed ?? 0;
+
+  const toggleAlly = (allyKey) => {
+    setCheckedAllies((prev) => {
+      if (prev.includes(allyKey)) {
+        // uncheck -> purge every roster instance sourced from this ally
+        setRoster((r) => r.filter((i) => i.sourceArmyKey !== allyKey));
+        return prev.filter((k) => k !== allyKey);
+      }
+      return [...prev, allyKey];
+    });
+  };
+
+  /* --- computed roster + validation --- */
+  const computed = useMemo(
+    () => roster.map((i) => ({ inst: i, calc: computeUnit(i) })),
+    [roster]
+  );
+  const totalPoints = computed.reduce((s, c) => s + c.calc.total, 0);
+
+  const warnings = useMemo(() => {
+    if (!army) return [];
+    const w = [];
+
+    if (totalPoints > maxPoints) {
+      w.push({
+        level: "critical",
+        msg: `Roster total (${totalPoints} pts) exceeds the Max Points Limit of ${maxPoints} pts.`,
+      });
+    }
+
+    const generalCount = roster.filter((i) => i.type === "General").length;
+    if (generalCount > 1) {
+      w.push({
+        level: "critical",
+        msg: "An army may only contain up to a maximum of 1 General choice inside the Commanders category.",
+      });
+    }
+
+    if (alliesCategory && checkedAllies.length > maxAllies) {
+      w.push({
+        level: "critical",
+        msg: `This army book only allows selecting a maximum of ${maxAllies} allied faction(s) simultaneously.`,
+      });
+    }
+
+    computed.forEach(({ inst, calc }) => {
+      if (calc.isSkirm && inst.bases > 6) {
+        w.push({
+          level: "critical",
+          msg: `${inst.name} has ${inst.bases} bases — Skirmisher units may not exceed 6 bases.`,
+        });
+      }
+    });
+
+    (army.categories || []).forEach((cat) => {
+      const inCat = computed.filter((c) => c.inst.categoryId === cat.id);
+      if (cat.constraintType === "count") {
+        const n = inCat.length;
+        if (n < (cat.min ?? 0))
+          w.push({
+            level: "warning",
+            msg: `${cat.name}: requires at least ${cat.min} unit choice(s) — currently ${n}.`,
+          });
+        if (cat.max != null && n > cat.max)
+          w.push({
+            level: "warning",
+            msg: `${cat.name}: allows at most ${cat.max} unit choice(s) — currently ${n}.`,
+          });
+      } else if (cat.constraintType === "percentage") {
+        const pts = inCat.reduce((s, c) => s + c.calc.total, 0);
+        const minPts = ((cat.min ?? 0) / 100) * maxPoints;
+        const maxPts = ((cat.max ?? 100) / 100) * maxPoints;
+        if (pts < minPts)
+          w.push({
+            level: "warning",
+            msg: `${cat.name}: minimum ${cat.min}% (${Math.round(
+              minPts
+            )} pts) required — currently ${pts} pts.`,
+          });
+        if (pts > maxPts)
+          w.push({
+            level: "warning",
+            msg: `${cat.name}: maximum ${cat.max}% (${Math.round(
+              maxPts
+            )} pts) exceeded — currently ${pts} pts.`,
+          });
+      }
+    });
+
+    return w;
+  }, [army, computed, totalPoints, maxPoints, roster, checkedAllies, alliesCategory, maxAllies]);
+
+  const isValid = warnings.length === 0 && roster.length > 0;
+
+  /* ---------------------------------------------------------------- */
+  if (!data) {
+    return (
+      <div className="sp-app flex items-center justify-center text-slate-300 font-cond text-xl">
+        Loading army data…
+      </div>
+    );
+  }
+
+  const armyKeys = Object.keys(armies);
+
+  return (
+    <div className="sp-app text-slate-100 pb-16">
+      {/* ---------- Top bar ---------- */}
+      <header className="no-print border-b border-slate-800/80 bg-slate-950/70 backdrop-blur sticky top-0 z-30">
+        <div className="max-w-[1400px] mx-auto px-6 py-4 flex flex-col items-center gap-3">
+          <div className="flex items-center gap-3">
+            <Swords className="text-emerald-400" size={28} />
+            <h1
+              data-testid="app-title"
+              className="font-display text-2xl md:text-3xl font-extrabold tracking-wide text-slate-50"
+            >
+              Swordpoint Army Builder
+            </h1>
+          </div>
+          <p className="font-cond text-slate-400 text-sm -mt-1">
+            {data.supplement || "Dark Age Armies"} ·{" "}
+            <span className={source === "remote" ? "text-emerald-400" : "text-amber-400"}>
+              {source === "remote" ? "Live data" : "Offline sample data"}
+            </span>
+          </p>
+
+          {/* Army dropdown */}
+          <div className="flex items-center gap-3 mt-1">
+            <label htmlFor="army-select" className="font-cond uppercase text-xs tracking-widest text-slate-500">
+              Faction
+            </label>
+            <select
+              id="army-select"
+              data-testid="army-select"
+              value={selectedArmyKey}
+              onChange={(e) => handleArmyChange(e.target.value)}
+              className="bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 min-w-[280px] cursor-pointer"
+            >
+              {armyKeys.map((k) => (
+                <option key={k} value={k}>
+                  {armies[k].armyName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </header>
+
+      {/* ---------- Main two-column dashboard ---------- */}
+      <main className="no-print max-w-[1400px] mx-auto px-4 md:px-6 mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* ====== LEFT: Catalog ====== */}
+        <section data-testid="catalog-panel" className="min-w-0">
+          <div className="flex items-center gap-2 mb-4">
+            <Users size={18} className="text-slate-400" />
+            <h2 className="font-display text-lg font-bold tracking-wide text-slate-200">
+              Available Troop Catalog
+            </h2>
+          </div>
+
+          <div className="space-y-5">
+            {(army?.categories || []).map((cat) => (
+              <CatalogCategory
+                key={cat.id}
+                cat={cat}
+                army={army}
+                homeKey={selectedArmyKey}
+                armies={armies}
+                checkedAllies={checkedAllies}
+                maxAllies={maxAllies}
+                onToggleAlly={toggleAlly}
+                onAdd={addUnit}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* ====== RIGHT: Roster ====== */}
+        <section data-testid="roster-panel" className="min-w-0">
+          {/* Sticky roster header */}
+          <div className="sticky top-[132px] z-20 mb-4">
+            <div
+              className={`rounded-xl border p-4 backdrop-blur bg-slate-950/90 ${
+                isValid ? "border-emerald-600/50" : "border-amber-600/50"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Flag size={18} className="text-slate-400" />
+                  <h2 className="font-display text-lg font-bold tracking-wide text-slate-100">
+                    Active Army Roster
+                  </h2>
+                </div>
+                <StatusBadge isValid={isValid} empty={roster.length === 0} />
+              </div>
+
+              <div className="mt-3 flex items-end justify-between gap-4 flex-wrap">
+                <div className="flex flex-col">
+                  <label
+                    htmlFor="max-points"
+                    className="font-cond uppercase text-[11px] tracking-widest text-slate-500 mb-1"
+                  >
+                    Max Points Limit
+                  </label>
+                  <input
+                    id="max-points"
+                    data-testid="max-points-input"
+                    type="number"
+                    min={0}
+                    value={maxPoints}
+                    onChange={(e) => setMaxPoints(Math.max(0, Number(e.target.value) || 0))}
+                    className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 w-32 font-cond text-lg text-slate-100 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div className="text-right">
+                  <div className="font-cond uppercase text-[11px] tracking-widest text-slate-500">
+                    Total / Limit
+                  </div>
+                  <div
+                    data-testid="total-points"
+                    className={`font-display text-3xl font-extrabold leading-none ${
+                      totalPoints > maxPoints ? "text-amber-400" : "text-emerald-400"
+                    }`}
+                  >
+                    {totalPoints}
+                    <span className="text-slate-500 text-xl font-semibold"> / {maxPoints}</span>
+                  </div>
+                </div>
+
+                <button
+                  data-testid="export-pdf-btn"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-cond font-semibold px-5 py-2 transition-colors"
+                >
+                  <Printer size={16} /> Export Roster to PDF
+                </button>
+              </div>
+            </div>
+
+            {/* Validation panel */}
+            <ValidationPanel warnings={warnings} isValid={isValid} empty={roster.length === 0} />
+          </div>
+
+          {/* Roster list */}
+          {roster.length === 0 ? (
+            <div
+              data-testid="empty-roster"
+              className="rounded-xl border border-dashed border-slate-800 p-10 text-center font-cond text-slate-500"
+            >
+              No units added yet. Pick troops from the catalog to build your army.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {computed.map(({ inst, calc }, idx) => (
+                <RosterRow
+                  key={inst.instanceId}
+                  inst={inst}
+                  calc={calc}
+                  armies={armies}
+                  index={idx}
+                  total={roster.length}
+                  onChangeBases={changeBases}
+                  onToggleEquip={toggleEquipment}
+                  onDuplicate={duplicateUnit}
+                  onMove={moveUnit}
+                  onRemove={removeUnit}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+
+      {/* ---------- Print-only clean summary ---------- */}
+      <PrintSummary
+        army={army}
+        computed={computed}
+        totalPoints={totalPoints}
+        maxPoints={maxPoints}
+        isValid={isValid}
+        warnings={warnings}
+      />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  SUB-COMPONENTS                                                     */
+/* ------------------------------------------------------------------ */
+function StatusBadge({ isValid, empty }) {
+  if (empty)
+    return (
+      <span
+        data-testid="status-badge"
+        className="inline-flex items-center gap-1.5 rounded-full bg-slate-800 text-slate-400 px-3 py-1 font-cond text-sm"
+      >
+        Empty roster
+      </span>
+    );
+  return isValid ? (
+    <span
+      data-testid="status-badge"
+      className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-600/40 px-3 py-1 font-cond text-sm font-semibold"
+    >
+      <ShieldCheck size={15} /> Valid
+    </span>
+  ) : (
+    <span
+      data-testid="status-badge"
+      className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-600/40 px-3 py-1 font-cond text-sm font-semibold"
+    >
+      <AlertTriangle size={15} /> Warnings
+    </span>
+  );
+}
+
+function ValidationPanel({ warnings, isValid, empty }) {
+  if (empty) return null;
+  if (isValid)
+    return (
+      <div
+        data-testid="validation-panel"
+        className="mt-2 rounded-lg border border-emerald-700/40 bg-emerald-500/10 px-4 py-2.5 font-cond text-emerald-300 flex items-center gap-2"
+      >
+        <ShieldCheck size={16} /> All constraints satisfied — this roster is legal.
+      </div>
+    );
+  return (
+    <div data-testid="validation-panel" className="mt-2 space-y-1.5">
+      {warnings.map((w, i) => (
+        <div
+          key={i}
+          data-testid="validation-warning"
+          className={`rounded-lg border px-4 py-2 font-cond text-sm flex items-start gap-2 ${
+            w.level === "critical"
+              ? "border-red-700/50 bg-red-500/10 text-red-300"
+              : "border-amber-700/50 bg-amber-500/10 text-amber-300"
+          }`}
+        >
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+          <span>{w.msg}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies, onToggleAlly, onAdd }) {
+  const homeUnits = (army?.units || []).filter((u) => u.category === cat.id);
+  const isAllies = Array.isArray(cat.alliedArmyKeys);
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
+      <div className="px-4 py-2.5 bg-slate-900/70 border-b border-slate-800 flex items-center justify-between">
+        <h3 className="font-display text-base font-bold tracking-wide text-slate-200">
+          {cat.name}
+        </h3>
+        <span className="font-cond text-[11px] uppercase tracking-widest text-slate-500">
+          {cat.constraintType === "percentage"
+            ? `${cat.min}–${cat.max}%`
+            : `${cat.min}–${cat.max} choices`}
+        </span>
+      </div>
+
+      <div className="p-3 space-y-2">
+        {/* Home army units */}
+        {homeUnits.map((u) => (
+          <CatalogUnit key={u.id} unit={u} onAddUnit={onAdd} armyKey={homeKey} />
+        ))}
+
+        {/* Allied selection */}
+        {isAllies && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-4">
+              {cat.alliedArmyKeys.map((ak) => {
+                const ally = armies[ak];
+                if (!ally) return null;
+                const checked = checkedAllies.includes(ak);
+                const disabled = !checked && checkedAllies.length >= maxAllies;
+                return (
+                  <label
+                    key={ak}
+                    className={`inline-flex items-center gap-2 font-cond text-sm select-none ${
+                      disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      data-testid={`ally-checkbox-${ak}`}
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => onToggleAlly(ak)}
+                      className="w-4 h-4 accent-emerald-500"
+                    />
+                    <span className={checked ? "text-emerald-300" : "text-slate-300"}>
+                      {ally.armyName}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+
+            {/* Active allied units (non-General only) */}
+            {cat.alliedArmyKeys
+              .filter((ak) => checkedAllies.includes(ak) && armies[ak])
+              .map((ak) => (
+                <div key={ak} className="rounded-lg border border-emerald-800/40 bg-emerald-950/20 p-2 space-y-2">
+                  <div className="font-cond text-xs uppercase tracking-widest text-emerald-400 px-1">
+                    {armies[ak].armyName}
+                  </div>
+                  {(armies[ak].units || [])
+                    .filter((u) => u.type !== "General")
+                    .map((u) => (
+                      <CatalogUnit key={ak + u.id} unit={u} onAddUnit={onAdd} armyKey={ak} categoryOverride={cat.id} />
+                    ))}
+                </div>
+              ))}
+          </div>
+        )}
+
+        {homeUnits.length === 0 && !isAllies && (
+          <p className="font-cond text-sm text-slate-600 px-1 py-1">No units in this category.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CatalogUnit({ unit, onAddUnit, armyKey, categoryOverride }) {
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2.5 flex items-start justify-between gap-3 hover:border-slate-700 transition-colors">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          {unit.type === "General" && <Crown size={14} className="text-amber-400 shrink-0" />}
+          <span className="font-cond font-semibold text-slate-100 truncate">{unit.name}</span>
+        </div>
+        <p className="font-body text-xs text-slate-500 mt-0.5 line-clamp-2">{unit.description}</p>
+        <div className="flex flex-wrap gap-2 mt-1.5 font-cond text-[11px] text-slate-400">
+          <span className="text-emerald-400 font-semibold">{unit.pointsPerBase} pts/base</span>
+          <span>· {unit.minBases}–{unit.maxBases} bases</span>
+          {unit.defence != null && <span>· Def {unit.defence}</span>}
+          {unit.cohesion != null && <span>· Coh {unit.cohesion}</span>}
+        </div>
+      </div>
+      <button
+        data-testid={`add-unit-${unit.id}`}
+        onClick={() => onAddUnit(unit, armyKey, categoryOverride)}
+        className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-cond font-semibold text-sm px-3 py-1.5 transition-colors"
+      >
+        <Plus size={14} /> Add
+      </button>
+    </div>
+  );
+}
+
+function RosterRow({
+  inst,
+  calc,
+  armies,
+  index,
+  total,
+  onChangeBases,
+  onToggleEquip,
+  onDuplicate,
+  onMove,
+  onRemove,
+}) {
+  const allyName =
+    inst.sourceArmyKey && armies[inst.sourceArmyKey]
+      ? armies[inst.sourceArmyKey].armyName
+      : null;
+  const atMin = inst.bases <= (inst.minBases || 1);
+  const atMax = inst.bases >= calc.effMax;
+
+  return (
+    <div
+      data-testid={`roster-row-${inst.instanceId}`}
+      className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            {inst.type === "General" && <Crown size={15} className="text-amber-400" />}
+            <span className="font-display font-bold text-slate-100">{inst.name}</span>
+            <span className="font-cond text-[10px] uppercase tracking-widest text-slate-500 bg-slate-800 rounded px-1.5 py-0.5">
+              {inst.categoryId}
+            </span>
+            {inst.sourceArmyKey && armies[inst.sourceArmyKey] && index >= 0 && inst.categoryId === "allies" && (
+              <span className="font-cond text-[10px] uppercase tracking-widest text-emerald-400 bg-emerald-950/50 border border-emerald-800/50 rounded px-1.5 py-0.5">
+                Allied
+              </span>
+            )}
+          </div>
+          {allyName && inst.categoryId === "allies" && (
+            <span className="font-cond text-[11px] text-emerald-500/80">{allyName}</span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 no-print">
+          <IconBtn testid={`move-up-${inst.instanceId}`} disabled={index === 0} onClick={() => onMove(inst.instanceId, -1)} title="Move up">
+            <ArrowUp size={15} />
+          </IconBtn>
+          <IconBtn testid={`move-down-${inst.instanceId}`} disabled={index === total - 1} onClick={() => onMove(inst.instanceId, 1)} title="Move down">
+            <ArrowDown size={15} />
+          </IconBtn>
+          <IconBtn testid={`duplicate-${inst.instanceId}`} onClick={() => onDuplicate(inst.instanceId)} title="Duplicate">
+            <Copy size={15} />
+          </IconBtn>
+          <IconBtn testid={`remove-${inst.instanceId}`} danger onClick={() => onRemove(inst.instanceId)} title="Remove">
+            <Trash2 size={15} />
+          </IconBtn>
+        </div>
+      </div>
+
+      {/* stats + bases */}
+      <div className="mt-3 flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <button
+            data-testid={`bases-minus-${inst.instanceId}`}
+            disabled={atMin}
+            onClick={() => onChangeBases(inst.instanceId, -1)}
+            className="w-8 h-8 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
+          >
+            <Minus size={15} />
+          </button>
+          <div className="text-center min-w-[64px]">
+            <div data-testid={`bases-count-${inst.instanceId}`} className="font-display text-xl font-bold text-slate-100 leading-none">
+              {inst.bases}
+            </div>
+            <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
+              bases ({inst.minBases}–{calc.effMax})
+            </div>
+          </div>
+          <button
+            data-testid={`bases-plus-${inst.instanceId}`}
+            disabled={atMax}
+            onClick={() => onChangeBases(inst.instanceId, 1)}
+            className="w-8 h-8 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
+          >
+            <Plus size={15} />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-4 font-cond text-sm">
+          {calc.defence != null && (
+            <Stat label="Def" value={calc.defence} />
+          )}
+          {calc.cohesion != null && <Stat label="Coh" value={calc.cohesion} />}
+          <Stat label="Pts/base" value={calc.ppb} />
+          <div className="text-right">
+            <div className="font-display text-2xl font-extrabold text-emerald-400 leading-none" data-testid={`unit-total-${inst.instanceId}`}>
+              {calc.total}
+            </div>
+            <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500">points</div>
+          </div>
+        </div>
+      </div>
+
+      {/* equipment */}
+      {inst.optionalEquipment.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-slate-800">
+          <div className="font-cond text-[11px] uppercase tracking-widest text-slate-500 mb-2">
+            Optional Equipment
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {inst.optionalEquipment.map((eq) => {
+              const on = inst.equipped.includes(eq.name);
+              return (
+                <label
+                  key={eq.name}
+                  className="inline-flex items-center gap-2 font-cond text-sm cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    data-testid={`equip-${inst.instanceId}-${eq.name.replace(/\s+/g, "-").toLowerCase()}`}
+                    checked={on}
+                    onChange={() => onToggleEquip(inst.instanceId, eq.name)}
+                    className="w-4 h-4 accent-emerald-500"
+                  />
+                  <span className={on ? "text-emerald-300" : "text-slate-300"}>
+                    {eq.name}
+                    <span className="text-slate-500">
+                      {" "}
+                      ({eq.pointsModifier >= 0 ? "+" : ""}
+                      {eq.pointsModifier})
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* active rules */}
+      {calc.rules.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {calc.rules.map((r) => (
+            <span
+              key={r}
+              className={`font-cond text-[11px] rounded px-2 py-0.5 border ${
+                isSkirmRule(r)
+                  ? "border-amber-700/50 bg-amber-500/10 text-amber-300"
+                  : "border-slate-700 bg-slate-800/60 text-slate-300"
+              }`}
+            >
+              {r}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="text-center">
+      <div className="font-display text-lg font-bold text-slate-200 leading-none">{value}</div>
+      <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500">{label}</div>
+    </div>
+  );
+}
+
+function IconBtn({ children, onClick, disabled, danger, title, testid }) {
+  return (
+    <button
+      title={title}
+      data-testid={testid}
+      disabled={disabled}
+      onClick={onClick}
+      className={`w-8 h-8 grid place-items-center rounded-md border transition-colors disabled:opacity-25 disabled:cursor-not-allowed ${
+        danger
+          ? "border-slate-700 bg-slate-800 text-red-400 hover:border-red-600 hover:text-red-300"
+          : "border-slate-700 bg-slate-800 text-slate-300 hover:border-emerald-600 hover:text-emerald-300"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warnings }) {
+  return (
+    <div className="print-summary" data-testid="print-summary">
+      <h1 style={{ fontFamily: "Cinzel, serif", fontSize: "22px", marginBottom: "2px" }}>
+        {army?.armyName || "Army Roster"}
+      </h1>
+      <div style={{ fontSize: "12px", marginBottom: "10px" }}>
+        Total Points: <strong>{totalPoints}</strong> / {maxPoints} &nbsp;·&nbsp; Status:{" "}
+        <strong style={{ color: isValid ? "#059669" : "#b45309" }}>
+          {isValid ? "VALID" : "WARNINGS PRESENT"}
+        </strong>
+      </div>
+
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+        <thead>
+          <tr style={{ borderBottom: "2px solid #0f172a", textAlign: "left" }}>
+            <th style={{ padding: "4px" }}>Unit</th>
+            <th style={{ padding: "4px" }}>Category</th>
+            <th style={{ padding: "4px" }}>Bases</th>
+            <th style={{ padding: "4px" }}>Def</th>
+            <th style={{ padding: "4px" }}>Coh</th>
+            <th style={{ padding: "4px" }}>Rules</th>
+            <th style={{ padding: "4px", textAlign: "right" }}>Points</th>
+          </tr>
+        </thead>
+        <tbody>
+          {computed.map(({ inst, calc }) => (
+            <tr key={inst.instanceId} style={{ borderBottom: "1px solid #cbd5e1" }}>
+              <td style={{ padding: "4px", fontWeight: 600 }}>{inst.name}</td>
+              <td style={{ padding: "4px" }}>{inst.categoryId}</td>
+              <td style={{ padding: "4px" }}>{inst.bases}</td>
+              <td style={{ padding: "4px" }}>{calc.defence ?? "-"}</td>
+              <td style={{ padding: "4px" }}>{calc.cohesion ?? "-"}</td>
+              <td style={{ padding: "4px" }}>{calc.rules.join(", ")}</td>
+              <td style={{ padding: "4px", textAlign: "right", fontWeight: 600 }}>{calc.total}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {!isValid && warnings.length > 0 && (
+        <div style={{ marginTop: "12px" }}>
+          <h3 style={{ fontFamily: "Cinzel, serif", fontSize: "14px" }}>Validation Notes</h3>
+          <ul style={{ fontSize: "11px", paddingLeft: "18px" }}>
+            {warnings.map((w, i) => (
+              <li key={i}>{w.msg}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
