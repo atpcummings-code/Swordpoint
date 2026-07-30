@@ -1192,18 +1192,10 @@ function RosterRow({
           </button>
         </div>
 
-        <div className="flex items-center gap-4 font-cond text-sm">
-          {calc.defence != null && (
-            <Stat label="Def" value={calc.defence} />
-          )}
-          {calc.cohesion != null && <Stat label="Coh" value={calc.cohesion} />}
-          <Stat label="Pts/base" value={calc.ppb} />
-          <div className="text-right">
-            <div className="font-display text-2xl font-extrabold text-emerald-400 leading-none" data-testid={`unit-total-${inst.instanceId}`}>
-              {calc.total}
-            </div>
-            <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500">points</div>
-          </div>
+        <div className="flex items-center gap-5 font-cond text-sm">
+          <Stat label="A" value={inst.attacks ?? "-"} testid={`unit-attacks-${inst.instanceId}`} />
+          <Stat label="D" value={calc.cohesion ?? "-"} testid={`unit-cohesion-${inst.instanceId}`} />
+          <Stat label="Pts" value={calc.total} big testid={`unit-total-${inst.instanceId}`} />
         </div>
       </div>
 
@@ -1264,11 +1256,18 @@ function RosterRow({
   );
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value, big, testid }) {
   return (
     <div className="text-center">
-      <div className="font-display text-lg font-bold text-slate-200 leading-none">{value}</div>
-      <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500">{label}</div>
+      <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500 mb-0.5">{label}</div>
+      <div
+        data-testid={testid}
+        className={`font-display leading-none ${
+          big ? "text-2xl font-extrabold text-emerald-400" : "text-lg font-bold text-slate-200"
+        }`}
+      >
+        {value}
+      </div>
     </div>
   );
 }
