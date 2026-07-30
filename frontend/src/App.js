@@ -834,7 +834,7 @@ function App() {
       >
         {/* ====== LEFT: Army Composition ====== */}
         <section data-testid="catalog-panel" className="min-w-0" style={{ height: "100%", overflowY: "auto" }}>
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-4 sticky top-0 z-20 bg-[#020617] py-2">
             <Users size={18} className="text-slate-400" />
             <h2 className="font-display text-lg font-bold tracking-wide text-slate-200">
               {army?.armyName || "Army Composition"}
@@ -864,16 +864,16 @@ function App() {
         {/* ====== RIGHT: Roster ====== */}
         <section data-testid="roster-panel" className="min-w-0" style={{ height: "100%", overflowY: "auto" }}>
           {/* Column header — mirrors the left column header so boxes stay level */}
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-4 sticky top-0 z-20 bg-[#020617] py-2">
             <Flag size={18} className="text-slate-400" />
             <h2 className="font-display text-lg font-bold tracking-wide text-slate-100">
               Active Army Roster
             </h2>
           </div>
 
-          {/* Sticky roster header */}
-          <div className="sticky top-[132px] z-20 mb-4">
-            <div className="rounded-xl border-2 border-red-600 p-4 backdrop-blur bg-slate-950/90">
+          {/* Roster summary box */}
+          <div className="mb-4">
+            <div className="rounded-xl border-2 border-emerald-400 p-4 backdrop-blur bg-slate-950/90">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <span className="font-cond uppercase text-[11px] tracking-widest text-slate-500">
                   Roster Summary
