@@ -487,6 +487,45 @@ function normalizeData(data) {
 const isCommanderCat = (id) => String(id).toLowerCase() === "commanders";
 const isAlliesCat = (id) => String(id).toLowerCase() === "allies";
 
+/* Make JSON parsing tolerant of JSONC: strips // line + /* block comments and
+   trailing commas. String-aware so it never touches // or commas inside quoted
+   values (e.g. "https://..." in a description). */
+function stripJsonc(text) {
+  let out = "";
+  let inStr = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const next = text[i + 1];
+    if (inStr) {
+      out += c;
+      if (escaped) escaped = false;
+      else if (c === "\\") escaped = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') {
+      inStr = true;
+      out += c;
+      continue;
+    }
+    if (c === "/" && next === "/") {
+      while (i < text.length && text[i] !== "\n") i++;
+      out += "\n";
+      continue;
+    }
+    if (c === "/" && next === "*") {
+      i += 2;
+      while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) i++;
+      i++; // skip closing '/'
+      continue;
+    }
+    out += c;
+  }
+  // remove trailing commas before } or ]
+  return out.replace(/,(\s*[}\]])/g, "$1");
+}
+
 function makeInstance(unit, sourceArmyKey, categoryOverride) {
   return {
     instanceId: uid(),
@@ -561,9 +600,9 @@ function App() {
       const text = await res.text();
       let parsed;
       try {
-        parsed = JSON.parse(text);
+        parsed = JSON.parse(stripJsonc(text));
       } catch (pe) {
-        throw new Error("Remote file is not valid JSON — " + pe.message);
+        throw new Error("Remote file is not valid JSON/JSONC — " + pe.message);
       }
       if (!parsed || !parsed.armies || typeof parsed.armies !== "object")
         throw new Error("Parsed JSON has no valid `armies` object.");
