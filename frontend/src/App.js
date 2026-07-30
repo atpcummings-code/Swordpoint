@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "@/App.css";
 import {
   Plus,
@@ -1441,7 +1441,6 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
             <th style={{ padding: "4px" }}>Atk</th>
             <th style={{ padding: "4px" }}>Def</th>
             <th style={{ padding: "4px" }}>Coh</th>
-            <th style={{ padding: "4px" }}>Description</th>
             <th style={{ padding: "4px" }}>Rules</th>
             <th style={{ padding: "4px", textAlign: "right" }}>Points</th>
           </tr>
@@ -1450,19 +1449,23 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
           {computed.map(({ inst, calc }) => {
             const isCommander = inst.categoryId === "commanders" || inst.type === "General";
             return (
-              <tr key={inst.instanceId} style={{ borderBottom: "1px solid #cbd5e1", verticalAlign: "top" }}>
-                <td style={{ padding: "4px", fontWeight: 600 }}>{inst.name}</td>
-                <td style={{ padding: "4px" }}>{inst.categoryId}</td>
-                <td style={{ padding: "4px" }}>{inst.bases}</td>
-                <td style={{ padding: "4px" }}>{isCommander ? inst.attacks ?? "-" : "-"}</td>
-                <td style={{ padding: "4px" }}>{calc.defence ?? "-"}</td>
-                <td style={{ padding: "4px" }}>{calc.cohesion ?? "-"}</td>
-                <td style={{ padding: "4px", fontStyle: "italic", color: "#475569", maxWidth: "220px" }}>
-                  {inst.description || "-"}
-                </td>
-                <td style={{ padding: "4px" }}>{calc.rules.join(", ")}</td>
-                <td style={{ padding: "4px", textAlign: "right", fontWeight: 600 }}>{calc.total}</td>
-              </tr>
+              <React.Fragment key={inst.instanceId}>
+                <tr style={{ verticalAlign: "top" }}>
+                  <td style={{ padding: "4px 4px 1px", fontWeight: 600 }}>{inst.name}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{inst.categoryId}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{inst.bases}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{isCommander ? inst.attacks ?? "-" : "-"}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{calc.defence ?? "-"}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{calc.cohesion ?? "-"}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{calc.rules.join(", ")}</td>
+                  <td style={{ padding: "4px 4px 1px", textAlign: "right", fontWeight: 600 }}>{calc.total}</td>
+                </tr>
+                <tr style={{ borderBottom: "1px solid #cbd5e1" }}>
+                  <td colSpan={8} style={{ padding: "0 4px 5px", fontStyle: "italic", color: "#475569", fontSize: "11px" }}>
+                    {inst.description || "-"}
+                  </td>
+                </tr>
+              </React.Fragment>
             );
           })}
         </tbody>
