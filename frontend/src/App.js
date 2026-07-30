@@ -579,7 +579,7 @@ function App() {
         setCheckedAllies([]);
       }
     } catch (e) {
-      setData((prev) => prev || MOCK_DATA);
+      setData((prev) => prev || normalizeData(MOCK_DATA));
       setSource("mock");
       setLoadError(e.message || "Failed to load remote data.");
       setSelectedArmyKey((prev) => prev || Object.keys(MOCK_DATA.armies)[0] || "");
