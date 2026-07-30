@@ -41,6 +41,8 @@ const MOCK_DATA = {
           constraintType: "percentage",
           min: 0,
           max: 15,
+          description:
+            "You may include one allied contingent. Check a faction below to add its non-General units. Allied units count toward this category's points limit.",
           alliedArmyKeys: ["vikings", "anglo_danish"],
           maxAlliedArmiesAllowed: 1,
         },
@@ -1130,6 +1132,15 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
             : `${cat.min}–${cat.max} choices`}
         </span>
       </div>
+
+      {cat.description && (
+        <p
+          data-testid={`category-description-${cat.id}`}
+          className="px-4 pt-3 font-body text-xs text-slate-400 leading-relaxed"
+        >
+          {cat.description}
+        </p>
+      )}
 
       <div className="p-3 space-y-2">
         {/* Home army units */}
