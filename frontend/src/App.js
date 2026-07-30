@@ -513,7 +513,7 @@ function App() {
   const [loadError, setLoadError] = useState("");
   const [reloading, setReloading] = useState(false);
   const [selectedArmyKey, setSelectedArmyKey] = useState("");
-  const [maxPoints, setMaxPoints] = useState(2000);
+  const [maxPoints, setMaxPoints] = useState(1000);
   const [roster, setRoster] = useState([]);
   const [checkedAllies, setCheckedAllies] = useState([]); // allied army keys enabled
 
