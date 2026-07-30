@@ -1193,8 +1193,12 @@ function RosterRow({
         </div>
 
         <div className="flex items-center gap-5 font-cond text-sm">
-          <Stat label="A" value={inst.attacks ?? "-"} testid={`unit-attacks-${inst.instanceId}`} />
-          <Stat label="D" value={calc.cohesion ?? "-"} testid={`unit-cohesion-${inst.instanceId}`} />
+          {inst.categoryId === "commanders" || inst.type === "General" ? (
+            <Stat label="A" value={inst.attacks ?? "-"} testid={`unit-attacks-${inst.instanceId}`} />
+          ) : (
+            <Stat label="D" value={calc.defence ?? "-"} testid={`unit-defence-${inst.instanceId}`} />
+          )}
+          <Stat label="C" value={calc.cohesion ?? "-"} testid={`unit-cohesion-${inst.instanceId}`} />
           <Stat label="Pts" value={calc.total} big testid={`unit-total-${inst.instanceId}`} />
         </div>
       </div>
