@@ -863,20 +863,21 @@ function App() {
 
         {/* ====== RIGHT: Roster ====== */}
         <section data-testid="roster-panel" className="min-w-0" style={{ height: "100%", overflowY: "auto" }}>
+          {/* Column header — mirrors the left column header so boxes stay level */}
+          <div className="flex items-center gap-2 mb-4">
+            <Flag size={18} className="text-slate-400" />
+            <h2 className="font-display text-lg font-bold tracking-wide text-slate-100">
+              Active Army Roster
+            </h2>
+          </div>
+
           {/* Sticky roster header */}
           <div className="sticky top-[132px] z-20 mb-4">
-            <div
-              className={`rounded-xl border p-4 backdrop-blur bg-slate-950/90 ${
-                isValid ? "border-emerald-600/50" : "border-amber-600/50"
-              }`}
-            >
+            <div className="rounded-xl border-2 border-red-600 p-4 backdrop-blur bg-slate-950/90">
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Flag size={18} className="text-slate-400" />
-                  <h2 className="font-display text-lg font-bold tracking-wide text-slate-100">
-                    Active Army Roster
-                  </h2>
-                </div>
+                <span className="font-cond uppercase text-[11px] tracking-widest text-slate-500">
+                  Roster Summary
+                </span>
                 <StatusBadge isValid={isValid} empty={roster.length === 0} />
               </div>
 
