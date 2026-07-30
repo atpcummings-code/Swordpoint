@@ -871,8 +871,8 @@ function App() {
             </h2>
           </div>
 
-          {/* Roster summary box */}
-          <div className="mb-4">
+          {/* Roster summary box + validation — fixed (sticky) so they don't scroll */}
+          <div className="mb-4 sticky top-[52px] z-10 bg-[#020617] pb-3">
             <div className="rounded-xl border-2 border-emerald-400 p-4 backdrop-blur bg-slate-950/90">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <span className="font-cond uppercase text-[11px] tracking-widest text-slate-500">
