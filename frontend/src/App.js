@@ -1464,11 +1464,19 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
                   <td style={{ padding: "4px 4px 1px" }}>{calc.rules.join(", ")}</td>
                   <td style={{ padding: "4px 4px 1px", textAlign: "right", fontWeight: 600 }}>{calc.total}</td>
                 </tr>
-                <tr style={{ borderBottom: "1px solid #cbd5e1" }}>
+                <tr style={{ borderBottom: inst.equipped.length ? "none" : "1px solid #cbd5e1" }}>
                   <td colSpan={8} style={{ padding: "0 4px 5px", fontStyle: "italic", color: "#475569", fontSize: "11px" }}>
                     {inst.description || "-"}
                   </td>
                 </tr>
+                {inst.equipped.length > 0 && (
+                  <tr style={{ borderBottom: "1px solid #cbd5e1" }}>
+                    <td colSpan={8} style={{ padding: "0 4px 5px", fontSize: "11px", color: "#0f172a" }}>
+                      <strong>Optional Equipment:</strong>{" "}
+                      {calc.active.map((e) => e.name).join(", ")}
+                    </td>
+                  </tr>
+                )}
               </React.Fragment>
             );
           })}
