@@ -59,6 +59,8 @@ const MOCK_DATA = {
           pointsPerBase: 50,
           minBases: 0,
           maxBases: 1,
+          minCountAllowed: 1,
+          maxCountAllowed: 1,
           specialRules: ["Army General"],
           optionalEquipment: [],
         },
@@ -102,6 +104,7 @@ const MOCK_DATA = {
           pointsPerBase: 20,
           minBases: 3,
           maxBases: 8,
+          maxCountAllowed: 2,
           specialRules: ["Superior Fighters", "Open Order"],
           optionalEquipment: [
             {
@@ -568,6 +571,8 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     allowedSecondaryUnits: Array.isArray(unit.allowedSecondaryUnits) ? unit.allowedSecondaryUnits : [],
     secondaryUnitId: null,
     secondaryRatio: null,
+    minCountAllowed: unit.minCountAllowed ?? null,
+    maxCountAllowed: unit.maxCountAllowed ?? null,
   };
 }
 
@@ -860,8 +865,53 @@ function App() {
       }
     });
 
+    /* --- Unit min/max count validation --- */
+    const counts = {};
+    roster.forEach((i) => {
+      counts[i.unitId] = (counts[i.unitId] || 0) + 1;
+    });
+
+    // Maximum limit: scan each unique unit id in the roster
+    const seenMax = new Set();
+    roster.forEach((i) => {
+      if (seenMax.has(i.unitId)) return;
+      seenMax.add(i.unitId);
+      if (i.maxCountAllowed != null && counts[i.unitId] > i.maxCountAllowed) {
+        w.push({
+          level: "critical",
+          msg: `Validation Error: You have added ${counts[i.unitId]} units of '${i.name}', but a maximum of ${i.maxCountAllowed} is allowed.`,
+        });
+      }
+    });
+
+    // Minimum limit: check every available unit (home + enabled allies) with minCountAllowed > 0
+    const availableUnits = [...(army.units || [])];
+    (army.categories || []).forEach((cat) => {
+      if (Array.isArray(cat.alliedArmyKeys)) {
+        cat.alliedArmyKeys.forEach((ak) => {
+          if (checkedAllies.includes(ak) && armies[ak]) {
+            availableUnits.push(...(armies[ak].units || []));
+          }
+        });
+      }
+    });
+    const seenMin = new Set();
+    availableUnits.forEach((u) => {
+      if (seenMin.has(u.id)) return;
+      seenMin.add(u.id);
+      if (u.minCountAllowed != null && u.minCountAllowed > 0) {
+        const c = counts[u.id] || 0;
+        if (c < u.minCountAllowed) {
+          w.push({
+            level: "warning",
+            msg: `Validation Error: This army must include at least ${u.minCountAllowed} units of '${u.name}' (Current: ${c}).`,
+          });
+        }
+      }
+    });
+
     return w;
-  }, [army, computed, totalPoints, maxPoints, roster, checkedAllies, alliesCategory, maxAllies]);
+  }, [army, armies, computed, totalPoints, maxPoints, roster, checkedAllies, alliesCategory, maxAllies]);
 
   const isValid = warnings.length === 0 && roster.length > 0;
 
