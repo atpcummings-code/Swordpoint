@@ -153,6 +153,24 @@ const MOCK_DATA = {
               cohesionModifier: 0,
             },
           ],
+          allowedSecondaryUnits: [
+            {
+              unitId: "welsh_att_skirmishers",
+              name: "Attached Skirmishers",
+              pointsPerBase: 4,
+              minRatioPercent: 25,
+              maxRatioPercent: 50,
+              specialRules: ["Skirmishers"],
+            },
+            {
+              unitId: "welsh_att_archers",
+              name: "Attached Archers",
+              pointsPerBase: 6,
+              minRatioPercent: 33,
+              maxRatioPercent: 75,
+              specialRules: ["Open Order"],
+            },
+          ],
         },
         {
           id: "welsh_tenants_cavalry",
@@ -547,8 +565,19 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     specialRules: Array.isArray(unit.specialRules) ? [...unit.specialRules] : [],
     optionalEquipment: Array.isArray(unit.optionalEquipment) ? unit.optionalEquipment : [],
     equipped: [],
+    allowedSecondaryUnits: Array.isArray(unit.allowedSecondaryUnits) ? unit.allowedSecondaryUnits : [],
+    secondaryUnitId: null,
+    secondaryRatio: null,
   };
 }
+
+const GLOBAL_RATIOS = [25, 33, 50, 67, 75];
+
+/* Valid ratio options for a secondary unit, inclusive of its min/max bounds */
+const ratiosFor = (su) =>
+  GLOBAL_RATIOS.filter(
+    (r) => r >= (su.minRatioPercent ?? 0) && r <= (su.maxRatioPercent ?? 100)
+  );
 
 /* Derive live stats for a roster instance */
 function computeUnit(inst) {
@@ -576,8 +605,26 @@ function computeUnit(inst) {
 
   const isSkirm = rules.some(isSkirmRule);
   const effMax = isSkirm ? Math.min(inst.maxBases, 6) : inst.maxBases;
-  const total = ppb * inst.bases;
-  return { ppb, defence, cohesion, rules, isSkirm, effMax, total, active };
+
+  // Secondary attachment
+  let secondary = null;
+  if (inst.secondaryUnitId && inst.secondaryRatio) {
+    const su = (inst.allowedSecondaryUnits || []).find((s) => s.unitId === inst.secondaryUnitId);
+    if (su) {
+      let secBases = Math.round(inst.bases * (inst.secondaryRatio / 100));
+      const secSkirm = (su.specialRules || []).some(isSkirmRule);
+      if (secSkirm && secBases > 6) secBases = 6; // Skirmisher clamp
+      const secPoints = secBases * (su.pointsPerBase || 0);
+      // append secondary rules into the active rules block
+      (su.specialRules || []).forEach((r) => {
+        if (!rules.includes(r)) rules.push(r);
+      });
+      secondary = { unit: su, bases: secBases, points: secPoints, isSkirm: secSkirm };
+    }
+  }
+
+  const total = ppb * inst.bases + (secondary ? secondary.points : 0);
+  return { ppb, defence, cohesion, rules, isSkirm, effMax, total, active, secondary };
 }
 
 /* ------------------------------------------------------------------ */
@@ -678,11 +725,28 @@ function App() {
     });
   };
 
+  const setSecondaryUnit = (instanceId, unitId) => {
+    updateInst(instanceId, (i) => {
+      if (!unitId) return { ...i, secondaryUnitId: null, secondaryRatio: null };
+      const su = (i.allowedSecondaryUnits || []).find((s) => s.unitId === unitId);
+      const opts = su ? ratiosFor(su) : [];
+      return { ...i, secondaryUnitId: unitId, secondaryRatio: opts[0] ?? null };
+    });
+  };
+
+  const setSecondaryRatio = (instanceId, ratio) => {
+    updateInst(instanceId, (i) => ({ ...i, secondaryRatio: ratio ? Number(ratio) : null }));
+  };
+
   const duplicateUnit = (instanceId) => {
     setRoster((prev) => {
       const idx = prev.findIndex((i) => i.instanceId === instanceId);
       if (idx === -1) return prev;
-      const clone = { ...prev[idx], equipped: [...prev[idx].equipped], instanceId: uid() };
+      const clone = {
+        ...prev[idx],
+        equipped: [...prev[idx].equipped],
+        instanceId: uid(),
+      }; // secondaryUnitId + secondaryRatio copied via spread
       const next = [...prev];
       next.splice(idx + 1, 0, clone);
       return next;
@@ -1029,6 +1093,8 @@ function App() {
                   onDuplicate={duplicateUnit}
                   onMove={moveUnit}
                   onRemove={removeUnit}
+                  onSetSecondary={setSecondaryUnit}
+                  onSetRatio={setSecondaryRatio}
                 />
               ))}
             </div>
@@ -1244,6 +1310,8 @@ function RosterRow({
   onDuplicate,
   onMove,
   onRemove,
+  onSetSecondary,
+  onSetRatio,
 }) {
   const allyName =
     inst.sourceArmyKey && armies[inst.sourceArmyKey]
@@ -1372,6 +1440,69 @@ function RosterRow({
                 </label>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* secondary attachment */}
+      {(inst.allowedSecondaryUnits || []).length > 0 && (
+        <div className="mt-3 pt-3 border-t border-slate-800">
+          <div className="font-cond text-[11px] uppercase tracking-widest text-slate-500 mb-2">
+            Combined Unit
+          </div>
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
+                Attach Secondary Unit
+              </label>
+              <select
+                data-testid={`secondary-select-${inst.instanceId}`}
+                value={inst.secondaryUnitId || ""}
+                onChange={(e) => onSetSecondary(inst.instanceId, e.target.value || null)}
+                className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 font-cond text-sm text-slate-100 focus:outline-none focus:border-emerald-500 cursor-pointer min-w-[180px]"
+              >
+                <option value="">None</option>
+                {inst.allowedSecondaryUnits.map((su) => (
+                  <option key={su.unitId} value={su.unitId}>
+                    {su.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {inst.secondaryUnitId && calc.secondary && (
+              <div className="flex flex-col gap-1">
+                <label className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
+                  Ratio
+                </label>
+                <select
+                  data-testid={`secondary-ratio-${inst.instanceId}`}
+                  value={inst.secondaryRatio || ""}
+                  onChange={(e) => onSetRatio(inst.instanceId, e.target.value || null)}
+                  className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 font-cond text-sm text-slate-100 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                  {ratiosFor(calc.secondary.unit).map((r) => (
+                    <option key={r} value={r}>
+                      {r}%
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {calc.secondary && (
+              <div
+                data-testid={`secondary-summary-${inst.instanceId}`}
+                className="font-cond text-sm text-emerald-300 pb-1"
+              >
+                +{calc.secondary.bases} × {calc.secondary.unit.name}
+                <span className="text-slate-500">
+                  {" "}
+                  ({calc.secondary.points} pts
+                  {calc.secondary.isSkirm ? ", Skirmisher ≤6" : ""})
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
