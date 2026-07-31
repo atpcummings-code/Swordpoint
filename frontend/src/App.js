@@ -23,6 +23,22 @@ import {
 const DATA_URL =
   "https://raw.githubusercontent.com/atpcummings-code/swordpoint-data/refs/heads/main/dark_ages_armies.json";
 
+/* Supplements — each maps to a remote army-data JSON file */
+const BASE_DATA_URL =
+  "https://raw.githubusercontent.com/atpcummings-code/swordpoint-data/refs/heads/main/";
+const SUPPLEMENTS = [
+  { name: "Chariot Armies", file: "chariot_armies.json" },
+  { name: "Charlemagne", file: "charlemagne.json" },
+  { name: "Classical Armies", file: "classical_armies.json" },
+  { name: "Dark Ages Armies", file: "dark_ages_armies.json" },
+  { name: "Genghis Khan", file: "genghis_khan.json" },
+  { name: "Medieval Armies", file: "medieval_armies.json" },
+  { name: "Rise of Rome", file: "rise_of_rome.json" },
+  { name: "The Hundred Years War", file: "the_hundred_years_war.json" },
+  { name: "To the Ends of the Earth", file: "to_the_ends_of_the_earth.json" },
+  { name: "The Wars of the Roses", file: "the_wars_of_the_roses.json" },
+].map((s) => ({ ...s, url: BASE_DATA_URL + s.file }));
+
 /* Fallback dataset — used if the remote fetch fails or returns invalid JSON.
    Mirrors the Swordpoint: Dark Age Armies schema. */
 const MOCK_DATA = {
@@ -644,12 +660,14 @@ function App() {
   const [maxPoints, setMaxPoints] = useState(1000);
   const [roster, setRoster] = useState([]);
   const [checkedAllies, setCheckedAllies] = useState([]); // allied army keys enabled
+  const [selectedSupplementUrl, setSelectedSupplementUrl] = useState("");
 
-  /* --- load data (remote with graceful fallback) --- */
-  const loadData = async (opts = {}) => {
+  /* --- load data for a supplement url (remote with graceful fallback) --- */
+  const loadData = async (url, opts = {}) => {
+    if (!url) return;
     setReloading(true);
     try {
-      const res = await fetch(DATA_URL, { cache: "no-store" });
+      const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error("HTTP " + res.status + " fetching data file");
       const text = await res.text();
       let parsed;
@@ -665,26 +683,35 @@ function App() {
       setSource("remote");
       setLoadError("");
       if (opts.keepSelection && parsed.armies[selectedArmyKey]) {
-        // keep current selection
+        // keep current faction selection on reload
       } else {
-        setSelectedArmyKey(Object.keys(parsed.armies)[0] || "");
+        // require an explicit faction choice after loading a supplement
+        setSelectedArmyKey("");
         setRoster([]);
         setCheckedAllies([]);
       }
     } catch (e) {
-      setData((prev) => prev || normalizeData(MOCK_DATA));
+      setData(normalizeData(JSON.parse(JSON.stringify(MOCK_DATA))));
       setSource("mock");
       setLoadError(e.message || "Failed to load remote data.");
-      setSelectedArmyKey((prev) => prev || Object.keys(MOCK_DATA.armies)[0] || "");
+      setSelectedArmyKey("");
+      setRoster([]);
+      setCheckedAllies([]);
     } finally {
       setReloading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /* --- supplement switch: load its data, reset faction + roster --- */
+  const handleSupplementChange = (url) => {
+    setSelectedSupplementUrl(url);
+    setSelectedArmyKey("");
+    setRoster([]);
+    setCheckedAllies([]);
+    setData(null);
+    setLoadError("");
+    if (url) loadData(url);
+  };
 
   const armies = data?.armies || {};
   const army = selectedArmyKey ? armies[selectedArmyKey] : null;
@@ -946,14 +973,6 @@ function App() {
   }, [army, computed, maxPoints]);
 
   /* ---------------------------------------------------------------- */
-  if (!data) {
-    return (
-      <div className="sp-app flex items-center justify-center text-slate-300 font-cond text-xl">
-        Loading army data…
-      </div>
-    );
-  }
-
   const armyKeys = Object.keys(armies);
 
   return (
@@ -970,21 +989,24 @@ function App() {
               Swordpoint Army Builder
             </h1>
           </div>
-          <p className="font-cond text-slate-400 text-sm -mt-1 flex items-center gap-2 flex-wrap justify-center">
-            <span>{data.supplement || "Dark Age Armies"}</span>
-            <span>·</span>
-            <span className={source === "remote" ? "text-emerald-400" : "text-amber-400"}>
-              {source === "remote" ? "Live data" : "Offline sample data"}
-            </span>
-            <button
-              data-testid="reload-json-btn"
-              onClick={() => loadData({ keepSelection: true })}
-              disabled={reloading}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900 hover:border-emerald-600 hover:text-emerald-300 text-slate-300 px-2.5 py-0.5 text-xs disabled:opacity-40"
-            >
-              <RefreshCw size={12} className={reloading ? "animate-spin" : ""} /> Reload JSON
-            </button>
-          </p>
+
+          {data && (
+            <p className="font-cond text-slate-400 text-sm -mt-1 flex items-center gap-2 flex-wrap justify-center">
+              <span>{data.supplement || "Army Supplement"}</span>
+              <span>·</span>
+              <span className={source === "remote" ? "text-emerald-400" : "text-amber-400"}>
+                {source === "remote" ? "Live data" : "Offline sample data"}
+              </span>
+              <button
+                data-testid="reload-json-btn"
+                onClick={() => loadData(selectedSupplementUrl, { keepSelection: true })}
+                disabled={reloading || !selectedSupplementUrl}
+                className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900 hover:border-emerald-600 hover:text-emerald-300 text-slate-300 px-2.5 py-0.5 text-xs disabled:opacity-40"
+              >
+                <RefreshCw size={12} className={reloading ? "animate-spin" : ""} /> Reload JSON
+              </button>
+            </p>
+          )}
 
           {loadError && (
             <div
@@ -996,29 +1018,69 @@ function App() {
             </div>
           )}
 
-          {/* Army dropdown */}
-          <div className="flex items-center gap-3 mt-1">
-            <label htmlFor="army-select" className="font-cond uppercase text-xs tracking-widest text-slate-500">
-              Faction
-            </label>
-            <select
-              id="army-select"
-              data-testid="army-select"
-              value={selectedArmyKey}
-              onChange={(e) => handleArmyChange(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 min-w-[280px] cursor-pointer"
-            >
-              {armyKeys.map((k) => (
-                <option key={k} value={k}>
-                  {armies[k].armyName}
-                </option>
-              ))}
-            </select>
+          {/* Supplement + Faction dropdowns */}
+          <div className="flex items-end gap-6 mt-1 flex-wrap justify-center">
+            <div className="flex flex-col items-start gap-1">
+              <label htmlFor="supplement-select" className="font-cond uppercase text-xs tracking-widest text-slate-500">
+                Supplement
+              </label>
+              <select
+                id="supplement-select"
+                data-testid="supplement-select"
+                value={selectedSupplementUrl}
+                onChange={(e) => handleSupplementChange(e.target.value)}
+                className="bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 min-w-[260px] cursor-pointer"
+              >
+                <option value="">— Select a supplement —</option>
+                {SUPPLEMENTS.map((s) => (
+                  <option key={s.url} value={s.url}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {data && (
+              <div className="flex flex-col items-start gap-1">
+                <label htmlFor="army-select" className="font-cond uppercase text-xs tracking-widest text-slate-500">
+                  Faction
+                </label>
+                <select
+                  id="army-select"
+                  data-testid="army-select"
+                  value={selectedArmyKey}
+                  onChange={(e) => handleArmyChange(e.target.value)}
+                  className="bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 min-w-[280px] cursor-pointer"
+                >
+                  <option value="">— Select a faction —</option>
+                  {armyKeys.map((k) => (
+                    <option key={k} value={k}>
+                      {armies[k].armyName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
+      {/* ---------- Empty states before a faction is chosen ---------- */}
+      {!army && (
+        <div
+          data-testid="builder-placeholder"
+          className="no-print max-w-[1400px] mx-auto px-6 mt-16 text-center font-cond text-slate-400"
+        >
+          {reloading && !data
+            ? "Loading supplement…"
+            : !selectedSupplementUrl
+            ? "Choose a supplement above to begin, then pick a faction."
+            : "Now select a faction to start building your army."}
+        </div>
+      )}
+
       {/* ---------- Main two-column dashboard ---------- */}
+      {army && (
       <main
         className="no-print max-w-[1400px] mx-auto px-4 md:px-6 mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6"
         style={{ height: "100vh", overflow: "hidden" }}
@@ -1156,6 +1218,7 @@ function App() {
           )}
         </section>
       </main>
+      )}
 
       {/* ---------- Print-only clean summary ---------- */}
       <PrintSummary
