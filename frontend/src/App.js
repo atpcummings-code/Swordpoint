@@ -804,9 +804,23 @@ function App() {
     setRoster((prev) => {
       const idx = prev.findIndex((i) => i.instanceId === instanceId);
       if (idx === -1) return prev;
+      const src = prev[idx];
+      // count equipment usage across all units of the same id (includes source)
+      const usage = {};
+      prev.forEach((i) => {
+        if (i.unitId === src.unitId)
+          i.equipped.forEach((n) => {
+            usage[n] = (usage[n] || 0) + 1;
+          });
+      });
+      // drop any equipment on the clone that would exceed its maxUnits limit
+      const cloneEquipped = src.equipped.filter((name) => {
+        const opt = src.optionalEquipment.find((e) => e.name === name);
+        return !(opt?.maxUnits != null && (usage[name] || 0) >= opt.maxUnits);
+      });
       const clone = {
-        ...prev[idx],
-        equipped: [...prev[idx].equipped],
+        ...src,
+        equipped: cloneEquipped,
         instanceId: uid(),
       }; // secondaryUnitId + secondaryRatio copied via spread
       const next = [...prev];
