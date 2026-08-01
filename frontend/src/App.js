@@ -1540,7 +1540,7 @@ function RosterRow({
       {inst.optionalEquipment.length > 0 && (
         <div className="mt-3 pt-3 border-t border-slate-800">
           <div className="font-cond text-[11px] uppercase tracking-widest text-slate-500 mb-2">
-            Optional Equipment
+            Unit Options
           </div>
           <div className="flex flex-wrap gap-3">
             {inst.optionalEquipment.map((eq) => {
