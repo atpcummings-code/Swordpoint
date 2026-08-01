@@ -168,6 +168,11 @@ const MOCK_DATA = {
               equipmentAdded: ["Throwing Spears"],
               equipmentRemoved: ["Spear"],
               disables: ["Riding Horses"],
+              basesComparison: {
+                expression: "lessThanOrEqual",
+                compareWith: ["Light Armour"],
+                ratio: 1,
+              },
               defenceModifier: 0,
               cohesionModifier: 0,
             },
@@ -1054,6 +1059,44 @@ function App() {
           });
         }
       }
+    });
+
+    /* --- basesComparison: compare total bases of units with an option enabled
+       against a ratio of the summed bases of the listed compareWith options --- */
+    const EXPR = {
+      lessThan: { test: (a, b) => a < b, label: "less than" },
+      lessThanOrEqual: { test: (a, b) => a <= b, label: "no more than" },
+      greaterThan: { test: (a, b) => a > b, label: "greater than" },
+      greaterThanOrEqual: { test: (a, b) => a >= b, label: "at least" },
+      equal: { test: (a, b) => a === b, label: "equal to" },
+    };
+    const byUnitBC = {};
+    roster.forEach((i) => {
+      (byUnitBC[i.unitId] = byUnitBC[i.unitId] || []).push(i);
+    });
+    Object.values(byUnitBC).forEach((list) => {
+      const basesWith = (name) =>
+        list.filter((i) => i.equipped.includes(name)).reduce((s, i) => s + i.bases, 0);
+      (list[0].optionalEquipment || [])
+        .filter((e) => e.basesComparison && e.basesComparison.expression)
+        .forEach((e) => {
+          const bc = e.basesComparison;
+          const ratio = bc.ratio != null ? bc.ratio : 1;
+          const compareWith = Array.isArray(bc.compareWith) ? bc.compareWith : [];
+          const leftTotal = basesWith(e.name);
+          const rightSum = compareWith.reduce((s, name) => s + basesWith(name), 0);
+          if (leftTotal === 0 && rightSum === 0) return; // nothing relevant in roster
+          const threshold = rightSum * ratio;
+          const expr = EXPR[bc.expression];
+          if (expr && !expr.test(leftTotal, threshold)) {
+            w.push({
+              level: "warning",
+              msg: `Bases with '${e.name}' (${leftTotal}) must be ${expr.label} ${ratio}× the bases with ${compareWith
+                .map((q) => `'${q}'`)
+                .join(" + ")} (${rightSum}) = ${threshold}.`,
+            });
+          }
+        });
     });
 
     return w;
