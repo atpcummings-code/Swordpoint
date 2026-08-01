@@ -1514,6 +1514,17 @@ function RosterRow({
           </button>
         </div>
 
+        {/* per-base points breakdown — centred immediately after the bases controls */}
+        <div className="flex items-center gap-6 font-cond text-sm">
+          <Stat label="Pts/Base" value={inst.basePointsPerBase} testid={`unit-pts-base-${inst.instanceId}`} />
+          <Stat
+            label="Pts/Options"
+            value={calc.ppb - inst.basePointsPerBase}
+            testid={`unit-pts-options-${inst.instanceId}`}
+          />
+          <Stat label="Total" value={calc.ppb} testid={`unit-pts-total-${inst.instanceId}`} />
+        </div>
+
         <div className="flex items-center gap-5 font-cond text-sm">
           {isCommanderCat(inst.categoryId) || inst.type === "General" ? (
             <Stat label="A" value={inst.attacks ?? "-"} testid={`unit-attacks-${inst.instanceId}`} />
@@ -1523,17 +1534,6 @@ function RosterRow({
           <Stat label="C" value={calc.cohesion ?? "-"} testid={`unit-cohesion-${inst.instanceId}`} />
           <Stat label="Pts" value={calc.total} big testid={`unit-total-${inst.instanceId}`} />
         </div>
-      </div>
-
-      {/* per-base points breakdown */}
-      <div className="mt-3 flex items-center gap-6 font-cond text-sm">
-        <Stat label="Pts/Base" value={inst.basePointsPerBase} testid={`unit-pts-base-${inst.instanceId}`} />
-        <Stat
-          label="Pts/Options"
-          value={calc.ppb - inst.basePointsPerBase}
-          testid={`unit-pts-options-${inst.instanceId}`}
-        />
-        <Stat label="Total" value={calc.ppb} testid={`unit-pts-total-${inst.instanceId}`} />
       </div>
 
       {/* equipment */}
