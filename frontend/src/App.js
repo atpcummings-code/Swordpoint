@@ -58,7 +58,7 @@ const MOCK_DATA = {
           min: 0,
           max: 15,
           description:
-            "You may include one allied contingent. Check a faction below to add its non-General units. Allied units count toward this category's points limit.",
+            "You may include one allied contingent. Check an army below to add its non-General units. Allied units count toward this category's points limit.",
           alliedArmyKeys: ["vikings", "anglo_danish"],
           maxAlliedArmiesAllowed: 1,
         },
@@ -683,9 +683,9 @@ function App() {
       setSource("remote");
       setLoadError("");
       if (opts.keepSelection && parsed.armies[selectedArmyKey]) {
-        // keep current faction selection on reload
+        // keep current army selection on reload
       } else {
-        // require an explicit faction choice after loading a supplement
+        // require an explicit army choice after loading a supplement
         setSelectedArmyKey("");
         setRoster([]);
         setCheckedAllies([]);
@@ -702,7 +702,7 @@ function App() {
     }
   };
 
-  /* --- supplement switch: load its data, reset faction + roster --- */
+  /* --- supplement switch: load its data, reset army + roster --- */
   const handleSupplementChange = (url) => {
     setSelectedSupplementUrl(url);
     setSelectedArmyKey("");
@@ -800,7 +800,7 @@ function App() {
     setRoster((prev) => prev.filter((i) => i.instanceId !== instanceId));
   };
 
-  /* --- allied faction toggle --- */
+  /* --- allied army toggle --- */
   const alliesCategory = army?.categories?.find((c) => Array.isArray(c.alliedArmyKeys));
   const maxAllies = alliesCategory?.maxAlliedArmiesAllowed ?? 0;
 
@@ -844,7 +844,7 @@ function App() {
     if (alliesCategory && checkedAllies.length > maxAllies) {
       w.push({
         level: "critical",
-        msg: `This army book only allows selecting a maximum of ${maxAllies} allied faction(s) simultaneously.`,
+        msg: `This army book only allows selecting a maximum of ${maxAllies} allied army(s) simultaneously.`,
       });
     }
 
@@ -1018,7 +1018,7 @@ function App() {
             </div>
           )}
 
-          {/* Supplement + Faction dropdowns */}
+          {/* Supplement + Army dropdowns */}
           <div className="flex items-end gap-6 mt-1 flex-wrap justify-center">
             <div className="flex flex-col items-start gap-1">
               <label htmlFor="supplement-select" className="font-cond uppercase text-xs tracking-widest text-slate-500">
@@ -1043,7 +1043,7 @@ function App() {
             {data && (
               <div className="flex flex-col items-start gap-1">
                 <label htmlFor="army-select" className="font-cond uppercase text-xs tracking-widest text-slate-500">
-                  Faction
+                  Army
                 </label>
                 <select
                   id="army-select"
@@ -1052,7 +1052,7 @@ function App() {
                   onChange={(e) => handleArmyChange(e.target.value)}
                   className="bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 min-w-[280px] cursor-pointer"
                 >
-                  <option value="">— Select a faction —</option>
+                  <option value="">— Select an army —</option>
                   {armyKeys.map((k) => (
                     <option key={k} value={k}>
                       {armies[k].armyName}
@@ -1065,7 +1065,7 @@ function App() {
         </div>
       </header>
 
-      {/* ---------- Empty states before a faction is chosen ---------- */}
+      {/* ---------- Empty states before an army is chosen ---------- */}
       {!army && (
         <div
           data-testid="builder-placeholder"
@@ -1074,8 +1074,8 @@ function App() {
           {reloading && !data
             ? "Loading supplement…"
             : !selectedSupplementUrl
-            ? "Choose a supplement above to begin, then pick a faction."
-            : "Now select a faction to start building your army."}
+            ? "Choose a supplement above to begin, then pick an army."
+            : "Now select an army to start building your army."}
         </div>
       )}
 
