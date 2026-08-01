@@ -146,12 +146,15 @@ const MOCK_DATA = {
           minBases: 3,
           maxBases: 8,
           specialRules: ["Superior Fighters", "Open Order", "Warband"],
+          baseEquipment: ["Spear", "Shield"],
           optionalEquipment: [
             {
               name: "Light Armour",
               pointsModifier: 2,
               rulesAdded: [],
               rulesRemoved: [],
+              equipmentAdded: ["Light Armour"],
+              equipmentRemoved: [],
               defenceModifier: -1,
               cohesionModifier: 0,
             },
@@ -160,6 +163,8 @@ const MOCK_DATA = {
               pointsModifier: 2,
               rulesAdded: [],
               rulesRemoved: [],
+              equipmentAdded: ["Throwing Spears"],
+              equipmentRemoved: ["Spear"],
               defenceModifier: 0,
               cohesionModifier: 0,
             },
@@ -168,6 +173,8 @@ const MOCK_DATA = {
               pointsModifier: 2,
               rulesAdded: ["Riding Horses"],
               rulesRemoved: [],
+              equipmentAdded: ["Warhorse"],
+              equipmentRemoved: [],
               defenceModifier: 0,
               cohesionModifier: 0,
             },
@@ -582,6 +589,7 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     maxBases: unit.maxBases ?? 1,
     bases: Math.max(unit.minBases ?? 0, 1),
     specialRules: Array.isArray(unit.specialRules) ? [...unit.specialRules] : [],
+    baseEquipment: Array.isArray(unit.baseEquipment) ? [...unit.baseEquipment] : [],
     optionalEquipment: Array.isArray(unit.optionalEquipment) ? unit.optionalEquipment : [],
     equipped: [],
     allowedSecondaryUnits: Array.isArray(unit.allowedSecondaryUnits) ? unit.allowedSecondaryUnits : [],
@@ -624,6 +632,16 @@ function computeUnit(inst) {
     });
   });
 
+  let equipment = [...inst.baseEquipment];
+  active.forEach((e) => {
+    (e.equipmentRemoved || []).forEach((x) => {
+      equipment = equipment.filter((i) => i !== x);
+    });
+    (e.equipmentAdded || []).forEach((x) => {
+      if (!equipment.includes(x)) equipment.push(x);
+    });
+  });
+
   const isSkirm = rules.some(isSkirmRule);
   const effMax = isSkirm ? Math.min(inst.maxBases, 6) : inst.maxBases;
   const effMin = isSkirm ? 2 : inst.minBases;
@@ -646,7 +664,7 @@ function computeUnit(inst) {
   }
 
   const total = ppb * inst.bases + (secondary ? secondary.points : 0);
-  return { ppb, defence, cohesion, rules, isSkirm, effMax, effMin, total, active, secondary };
+  return { ppb, defence, cohesion, rules, equipment, isSkirm, effMax, effMin, total, active, secondary };
 }
 
 /* ------------------------------------------------------------------ */
@@ -1535,6 +1553,25 @@ function RosterRow({
           <Stat label="Pts/Unit" value={calc.total} big testid={`unit-total-${inst.instanceId}`} />
         </div>
       </div>
+
+      {/* base equipment — weapons and armour */}
+      {calc.equipment.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-slate-800">
+          <div className="font-cond text-[11px] uppercase tracking-widest text-slate-500 mb-2">
+            Weapons and Armour
+          </div>
+          <div className="flex flex-wrap gap-1.5" data-testid={`unit-base-equipment-${inst.instanceId}`}>
+            {calc.equipment.map((item) => (
+              <span
+                key={item}
+                className="font-cond text-[11px] rounded px-2 py-0.5 border border-slate-700 bg-slate-800/60 text-slate-200"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* equipment */}
       {inst.optionalEquipment.length > 0 && (
