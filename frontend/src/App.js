@@ -1525,6 +1525,17 @@ function RosterRow({
         </div>
       </div>
 
+      {/* per-base points breakdown */}
+      <div className="mt-3 flex items-center gap-6 font-cond text-sm">
+        <Stat label="Pts/Base" value={inst.basePointsPerBase} testid={`unit-pts-base-${inst.instanceId}`} />
+        <Stat
+          label="Pts/Options"
+          value={calc.ppb - inst.basePointsPerBase}
+          testid={`unit-pts-options-${inst.instanceId}`}
+        />
+        <Stat label="Total" value={calc.ppb} testid={`unit-pts-total-${inst.instanceId}`} />
+      </div>
+
       {/* equipment */}
       {inst.optionalEquipment.length > 0 && (
         <div className="mt-3 pt-3 border-t border-slate-800">
