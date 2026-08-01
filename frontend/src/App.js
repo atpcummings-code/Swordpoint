@@ -1532,7 +1532,7 @@ function RosterRow({
             <Stat label="D" value={calc.defence ?? "-"} testid={`unit-defence-${inst.instanceId}`} />
           )}
           <Stat label="C" value={calc.cohesion ?? "-"} testid={`unit-cohesion-${inst.instanceId}`} />
-          <Stat label="Pts" value={calc.total} big testid={`unit-total-${inst.instanceId}`} />
+          <Stat label="Pts/Unit" value={calc.total} big testid={`unit-total-${inst.instanceId}`} />
         </div>
       </div>
 
