@@ -155,6 +155,7 @@ const MOCK_DATA = {
               rulesRemoved: [],
               equipmentAdded: ["Light Armour"],
               equipmentRemoved: [],
+              maxUnits: 1,
               defenceModifier: -1,
               cohesionModifier: 0,
             },
@@ -851,6 +852,18 @@ function App() {
   );
   const totalPoints = computed.reduce((s, c) => s + c.calc.total, 0);
 
+  /* Count how many roster instances of each unit id have each equipment applied */
+  const equipUsage = useMemo(() => {
+    const m = {};
+    roster.forEach((i) => {
+      i.equipped.forEach((name) => {
+        m[i.unitId] = m[i.unitId] || {};
+        m[i.unitId][name] = (m[i.unitId][name] || 0) + 1;
+      });
+    });
+    return m;
+  }, [roster]);
+
   const warnings = useMemo(() => {
     if (!army) return [];
     const w = [];
@@ -1229,6 +1242,7 @@ function App() {
                   armies={armies}
                   index={idx}
                   total={roster.length}
+                  equipUsage={equipUsage}
                   onChangeBases={changeBases}
                   onToggleEquip={toggleEquipment}
                   onDuplicate={duplicateUnit}
@@ -1448,6 +1462,7 @@ function RosterRow({
   armies,
   index,
   total,
+  equipUsage,
   onChangeBases,
   onToggleEquip,
   onDuplicate,
@@ -1617,7 +1632,9 @@ function RosterRow({
               );
               return inst.optionalEquipment.map((eq) => {
                 const on = inst.equipped.includes(eq.name);
-                const blocked = !on && disabledNames.has(eq.name);
+                const usedCount = equipUsage?.[inst.unitId]?.[eq.name] || 0;
+                const atMaxUnits = eq.maxUnits != null && !on && usedCount >= eq.maxUnits;
+                const blocked = (!on && disabledNames.has(eq.name)) || atMaxUnits;
                 return (
                   <label
                     key={eq.name}
