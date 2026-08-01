@@ -46,6 +46,7 @@ const MOCK_DATA = {
   armies: {
     early_medieval_welsh: {
       armyName: "Early Medieval Welsh (800 AD - 1063 AD)",
+      exclusiveGroups: [["welsh_tenants_spearmen", "welsh_tenants_archers"]],
       armyValidation: [
         {
           unitId: "welsh_skirmishers",
@@ -911,6 +912,22 @@ function App() {
     return m;
   }, [roster]);
 
+  /* Army-level mutually exclusive unit groups: once any unit in a group is in
+     the roster, the +Add button for the other units in that group is disabled. */
+  const blockedAddIds = useMemo(() => {
+    const blocked = new Set();
+    (army?.exclusiveGroups || []).forEach((group) => {
+      if (!Array.isArray(group)) return;
+      const present = group.filter((id) => (rosterCounts[id] || 0) > 0);
+      if (present.length > 0) {
+        group.forEach((id) => {
+          if (!present.includes(id)) blocked.add(id);
+        });
+      }
+    });
+    return blocked;
+  }, [army, rosterCounts]);
+
   /* "enabledEvery": an option is only unlocked on every nth unit of a type
      (positions n, 2n, 3n...). Returns instanceId -> Set of LOCKED option names. */
   const enabledEveryLocks = useMemo(() => {
@@ -1324,6 +1341,7 @@ function App() {
                 maxAllies={maxAllies}
                 onToggleAlly={toggleAlly}
                 onAdd={addUnit}
+                blockedAddIds={blockedAddIds}
               />
             ))}
           </div>
@@ -1513,7 +1531,7 @@ function ValidationPanel({ warnings, isValid, empty }) {
   );
 }
 
-function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies, onToggleAlly, onAdd }) {
+function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies, onToggleAlly, onAdd, blockedAddIds }) {
   const homeUnits = (army?.units || []).filter((u) => u.category === cat.id);
   const isAllies = Array.isArray(cat.alliedArmyKeys);
 
@@ -1542,7 +1560,7 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
       <div className="p-3 space-y-2">
         {/* Home army units */}
         {homeUnits.map((u) => (
-          <CatalogUnit key={u.id} unit={u} onAddUnit={onAdd} armyKey={homeKey} />
+          <CatalogUnit key={u.id} unit={u} onAddUnit={onAdd} armyKey={homeKey} blocked={blockedAddIds?.has(u.id)} />
         ))}
 
         {/* Allied selection */}
@@ -1588,7 +1606,7 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
                   {(armies[ak].units || [])
                     .filter((u) => u.type !== "General")
                     .map((u) => (
-                      <CatalogUnit key={ak + u.id} unit={u} onAddUnit={onAdd} armyKey={ak} categoryOverride={cat.id} />
+                      <CatalogUnit key={ak + u.id} unit={u} onAddUnit={onAdd} armyKey={ak} categoryOverride={cat.id} blocked={blockedAddIds?.has(u.id)} />
                     ))}
                 </div>
               ))}
@@ -1603,9 +1621,9 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
   );
 }
 
-function CatalogUnit({ unit, onAddUnit, armyKey, categoryOverride }) {
+function CatalogUnit({ unit, onAddUnit, armyKey, categoryOverride, blocked }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2.5 flex items-start justify-between gap-3 hover:border-slate-700 transition-colors">
+    <div className={`rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2.5 flex items-start justify-between gap-3 transition-colors ${blocked ? "opacity-50" : "hover:border-slate-700"}`}>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           {unit.type === "General" && <Crown size={14} className="text-amber-400 shrink-0" />}
@@ -1622,8 +1640,9 @@ function CatalogUnit({ unit, onAddUnit, armyKey, categoryOverride }) {
       </div>
       <button
         data-testid={`add-unit-${unit.id}`}
+        disabled={blocked}
         onClick={() => onAddUnit(unit, armyKey, categoryOverride)}
-        className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-cond font-semibold text-sm px-3 py-1.5 transition-colors"
+        className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-cond font-semibold text-sm px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-600"
       >
         <Plus size={14} /> Add
       </button>
