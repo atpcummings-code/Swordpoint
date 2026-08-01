@@ -1398,6 +1398,7 @@ function CatalogUnit({ unit, onAddUnit, armyKey, categoryOverride }) {
           <span className="text-emerald-400 font-semibold">{unit.pointsPerBase} pts/base</span>
           <span>· {unit.minBases}–{unit.maxBases} bases</span>
           {unit.defence != null && <span>· Def {unit.defence}</span>}
+          {unit.attacks != null && <span>· Atk {unit.attacks}</span>}
           {unit.cohesion != null && <span>· Coh {unit.cohesion}</span>}
         </div>
       </div>
