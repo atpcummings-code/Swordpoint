@@ -46,6 +46,14 @@ const MOCK_DATA = {
   armies: {
     early_medieval_welsh: {
       armyName: "Early Medieval Welsh (800 AD - 1063 AD)",
+      armyValidation: [
+        {
+          unitId: "welsh_skirmishers",
+          compareWith: ["welsh_teulu_foot", "welsh_teulu_cavalry"],
+          expression: "lessThanOrEqual",
+          ratio: 0.5,
+        },
+      ],
       categories: [
         { id: "commanders", name: "Commanders", constraintType: "count", min: 1, max: 8 },
         { id: "teulu", name: "Teulu", constraintType: "percentage", min: 0, max: 33 },
@@ -1102,6 +1110,46 @@ function App() {
             });
           }
         });
+    });
+
+    /* --- armyValidation: compare total bases of a unit id against a ratio of
+       the combined total bases of one or more other unit ids --- */
+    const basesByUnit = {};
+    roster.forEach((i) => {
+      basesByUnit[i.unitId] = (basesByUnit[i.unitId] || 0) + i.bases;
+    });
+    const nameOf = (id) => {
+      const all = [...(army.units || [])];
+      (army.categories || []).forEach((cat) => {
+        if (Array.isArray(cat.alliedArmyKeys)) {
+          cat.alliedArmyKeys.forEach((ak) => {
+            if (armies[ak]) all.push(...(armies[ak].units || []));
+          });
+        }
+      });
+      return all.find((u) => u.id === id)?.name || id;
+    };
+    (army.armyValidation || []).forEach((rule) => {
+      if (!rule || !rule.unitId || !rule.expression) return;
+      const ratio = rule.ratio != null ? rule.ratio : 1;
+      const compareWith = Array.isArray(rule.compareWith)
+        ? rule.compareWith
+        : rule.compareWith
+        ? [rule.compareWith]
+        : [];
+      const leftTotal = basesByUnit[rule.unitId] || 0;
+      const rightSum = compareWith.reduce((s, id) => s + (basesByUnit[id] || 0), 0);
+      if (leftTotal === 0 && rightSum === 0) return;
+      const threshold = rightSum * ratio;
+      const expr = EXPR[rule.expression];
+      if (expr && !expr.test(leftTotal, threshold)) {
+        w.push({
+          level: "warning",
+          msg: `${nameOf(rule.unitId)} bases (${leftTotal}) must be ${expr.label} ${ratio}× the bases of ${compareWith
+            .map((id) => nameOf(id))
+            .join(" + ")} (${rightSum}) = ${threshold}.`,
+        });
+      }
     });
 
     return w;
