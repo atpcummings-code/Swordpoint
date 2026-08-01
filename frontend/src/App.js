@@ -1071,13 +1071,18 @@ function App() {
       equal: { test: (a, b) => a === b, label: "equal to" },
     };
     const byUnitBC = {};
-    roster.forEach((i) => {
-      (byUnitBC[i.unitId] = byUnitBC[i.unitId] || []).push(i);
+    computed.forEach((c) => {
+      (byUnitBC[c.inst.unitId] = byUnitBC[c.inst.unitId] || []).push(c);
     });
     Object.values(byUnitBC).forEach((list) => {
+      // count bases of units that carry `name` via optionalEquipment OR baseEquipment
       const basesWith = (name) =>
-        list.filter((i) => i.equipped.includes(name)).reduce((s, i) => s + i.bases, 0);
-      (list[0].optionalEquipment || [])
+        list
+          .filter(
+            (c) => c.inst.equipped.includes(name) || (c.calc.equipment || []).includes(name)
+          )
+          .reduce((s, c) => s + c.inst.bases, 0);
+      (list[0].inst.optionalEquipment || [])
         .filter((e) => e.basesComparison && e.basesComparison.expression)
         .forEach((e) => {
           const bc = e.basesComparison;
