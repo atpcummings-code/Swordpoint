@@ -165,6 +165,7 @@ const MOCK_DATA = {
               rulesRemoved: [],
               equipmentAdded: ["Throwing Spears"],
               equipmentRemoved: ["Spear"],
+              disables: ["Riding Horses"],
               defenceModifier: 0,
               cohesionModifier: 0,
             },
@@ -175,6 +176,7 @@ const MOCK_DATA = {
               rulesRemoved: [],
               equipmentAdded: ["Warhorse"],
               equipmentRemoved: [],
+              disables: ["Throwing Spears"],
               defenceModifier: 0,
               cohesionModifier: 0,
             },
@@ -765,9 +767,15 @@ function App() {
   const toggleEquipment = (instanceId, equipName) => {
     updateInst(instanceId, (i) => {
       const has = i.equipped.includes(equipName);
-      const equipped = has
-        ? i.equipped.filter((n) => n !== equipName)
-        : [...i.equipped, equipName];
+      let equipped;
+      if (has) {
+        equipped = i.equipped.filter((n) => n !== equipName);
+      } else {
+        // selecting this item: drop any currently-equipped items it disables
+        const item = i.optionalEquipment.find((e) => e.name === equipName);
+        const disables = item?.disables || [];
+        equipped = [...i.equipped.filter((n) => !disables.includes(n)), equipName];
+      }
       let next = { ...i, equipped };
       // Skirmisher rule override — clamp bases into [2, 6] when activated
       const { isSkirm, effMax, effMin } = computeUnit(next);
@@ -1601,31 +1609,42 @@ function RosterRow({
             Unit Options
           </div>
           <div className="flex flex-wrap gap-3">
-            {inst.optionalEquipment.map((eq) => {
-              const on = inst.equipped.includes(eq.name);
-              return (
-                <label
-                  key={eq.name}
-                  className="inline-flex items-center gap-2 font-cond text-sm cursor-pointer select-none"
-                >
-                  <input
-                    type="checkbox"
-                    data-testid={`equip-${inst.instanceId}-${eq.name.replace(/\s+/g, "-").toLowerCase()}`}
-                    checked={on}
-                    onChange={() => onToggleEquip(inst.instanceId, eq.name)}
-                    className="w-4 h-4 accent-emerald-500"
-                  />
-                  <span className={on ? "text-emerald-300" : "text-slate-300"}>
-                    {eq.name}
-                    <span className="text-slate-500">
-                      {" "}
-                      ({eq.pointsModifier >= 0 ? "+" : ""}
-                      {eq.pointsModifier})
-                    </span>
-                  </span>
-                </label>
+            {(() => {
+              const disabledNames = new Set(
+                inst.optionalEquipment
+                  .filter((e) => inst.equipped.includes(e.name))
+                  .flatMap((e) => e.disables || [])
               );
-            })}
+              return inst.optionalEquipment.map((eq) => {
+                const on = inst.equipped.includes(eq.name);
+                const blocked = !on && disabledNames.has(eq.name);
+                return (
+                  <label
+                    key={eq.name}
+                    className={`inline-flex items-center gap-2 font-cond text-sm select-none ${
+                      blocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      data-testid={`equip-${inst.instanceId}-${eq.name.replace(/\s+/g, "-").toLowerCase()}`}
+                      checked={on}
+                      disabled={blocked}
+                      onChange={() => onToggleEquip(inst.instanceId, eq.name)}
+                      className="w-4 h-4 accent-emerald-500"
+                    />
+                    <span className={on ? "text-emerald-300" : "text-slate-300"}>
+                      {eq.name}
+                      <span className="text-slate-500">
+                        {" "}
+                        ({eq.pointsModifier >= 0 ? "+" : ""}
+                        {eq.pointsModifier})
+                      </span>
+                    </span>
+                  </label>
+                );
+              });
+            })()}
           </div>
         </div>
       )}
