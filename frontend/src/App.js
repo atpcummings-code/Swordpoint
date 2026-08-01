@@ -1554,21 +1554,42 @@ function RosterRow({
         </div>
       </div>
 
-      {/* base equipment — weapons and armour */}
-      {calc.equipment.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-slate-800">
-          <div className="font-cond text-[11px] uppercase tracking-widest text-slate-500 mb-2">
-            Weapons and Armour
+      {/* base equipment + special rules — two columns */}
+      {(calc.equipment.length > 0 || calc.rules.length > 0) && (
+        <div className="mt-3 pt-3 border-t border-slate-800 grid grid-cols-2 gap-4">
+          <div>
+            <div className="font-cond text-[11px] uppercase tracking-widest text-slate-500 mb-2">
+              Weapons and Armour
+            </div>
+            <div className="flex flex-wrap gap-1.5" data-testid={`unit-base-equipment-${inst.instanceId}`}>
+              {calc.equipment.map((item) => (
+                <span
+                  key={item}
+                  className="font-cond text-[11px] rounded px-2 py-0.5 border border-slate-700 bg-slate-800/60 text-slate-200"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-1.5" data-testid={`unit-base-equipment-${inst.instanceId}`}>
-            {calc.equipment.map((item) => (
-              <span
-                key={item}
-                className="font-cond text-[11px] rounded px-2 py-0.5 border border-slate-700 bg-slate-800/60 text-slate-200"
-              >
-                {item}
-              </span>
-            ))}
+          <div>
+            <div className="font-cond text-[11px] uppercase tracking-widest text-slate-500 mb-2">
+              Special Rules
+            </div>
+            <div className="flex flex-wrap gap-1.5" data-testid={`unit-special-rules-${inst.instanceId}`}>
+              {calc.rules.map((r) => (
+                <span
+                  key={r}
+                  className={`font-cond text-[11px] rounded px-2 py-0.5 border ${
+                    isSkirmRule(r)
+                      ? "border-amber-700/50 bg-amber-500/10 text-amber-300"
+                      : "border-slate-700 bg-slate-800/60 text-slate-300"
+                  }`}
+                >
+                  {r}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -1669,24 +1690,6 @@ function RosterRow({
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* active rules */}
-      {calc.rules.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {calc.rules.map((r) => (
-            <span
-              key={r}
-              className={`font-cond text-[11px] rounded px-2 py-0.5 border ${
-                isSkirmRule(r)
-                  ? "border-amber-700/50 bg-amber-500/10 text-amber-300"
-                  : "border-slate-700 bg-slate-800/60 text-slate-300"
-              }`}
-            >
-              {r}
-            </span>
-          ))}
         </div>
       )}
     </div>
