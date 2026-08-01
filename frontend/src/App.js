@@ -121,6 +121,7 @@ const MOCK_DATA = {
           minBases: 3,
           maxBases: 8,
           maxCountAllowed: 2,
+          requires: { unitId: "welsh_over_king", count: 1, name: "Over King" },
           specialRules: ["Superior Fighters", "Open Order"],
           optionalEquipment: [
             {
@@ -600,7 +601,17 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     secondaryRatio: null,
     minCountAllowed: unit.minCountAllowed ?? null,
     maxCountAllowed: unit.maxCountAllowed ?? null,
+    requires: normalizeRequires(unit.requires),
   };
+}
+
+/* Normalize a unit's "requires" into an array of { unitId, count, name } */
+function normalizeRequires(req) {
+  if (!req) return [];
+  const arr = Array.isArray(req) ? req : [req];
+  return arr
+    .filter((r) => r && r.unitId)
+    .map((r) => ({ unitId: r.unitId, count: r.count ?? 1, name: r.name || r.unitId }));
 }
 
 const GLOBAL_RATIOS = [25, 33, 50, 67, 75];
@@ -867,13 +878,21 @@ function App() {
   const totalPoints = computed.reduce((s, c) => s + c.calc.total, 0);
 
   /* Count how many roster instances of each unit id have each equipment applied */
-  const equipUsage = useMemo(() => {
-    const m = {};
+  const equipUsage = useMemo(() => {    const m = {};
     roster.forEach((i) => {
       i.equipped.forEach((name) => {
         m[i.unitId] = m[i.unitId] || {};
         m[i.unitId][name] = (m[i.unitId][name] || 0) + 1;
       });
+    });
+    return m;
+  }, [roster]);
+
+  /* Count roster instances per unit id (for unit "requires" checks) */
+  const rosterCounts = useMemo(() => {
+    const m = {};
+    roster.forEach((i) => {
+      m[i.unitId] = (m[i.unitId] || 0) + 1;
     });
     return m;
   }, [roster]);
@@ -1257,6 +1276,7 @@ function App() {
                   index={idx}
                   total={roster.length}
                   equipUsage={equipUsage}
+                  rosterCounts={rosterCounts}
                   onChangeBases={changeBases}
                   onToggleEquip={toggleEquipment}
                   onDuplicate={duplicateUnit}
@@ -1477,6 +1497,7 @@ function RosterRow({
   index,
   total,
   equipUsage,
+  rosterCounts,
   onChangeBases,
   onToggleEquip,
   onDuplicate,
@@ -1492,11 +1513,31 @@ function RosterRow({
   const atMin = inst.bases <= (calc.effMin || 1);
   const atMax = inst.bases >= calc.effMax;
 
+  const unmetRequires = (inst.requires || []).filter(
+    (r) => (rosterCounts?.[r.unitId] || 0) < r.count
+  );
+
   return (
     <div
       data-testid={`roster-row-${inst.instanceId}`}
       className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
     >
+      {unmetRequires.length > 0 && (
+        <div
+          data-testid={`unit-requires-warning-${inst.instanceId}`}
+          className="mb-3 rounded-lg border border-amber-700/50 bg-amber-500/10 text-amber-300 px-3 py-2 font-cond text-sm flex items-start gap-2"
+        >
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+          <span>
+            {unmetRequires.map((r) => (
+              <span key={r.unitId} className="block">
+                Requires at least {r.count} × {r.name} in the roster (currently{" "}
+                {rosterCounts?.[r.unitId] || 0}).
+              </span>
+            ))}
+          </span>
+        </div>
+      )}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
