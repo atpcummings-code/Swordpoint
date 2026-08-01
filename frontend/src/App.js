@@ -538,13 +538,6 @@ function normalizeData(data) {
 const isCommanderCat = (id) => String(id).toLowerCase() === "commanders";
 const isAlliesCat = (id) => String(id).toLowerCase() === "allies";
 
-/* ordinal suffix: 1->st, 2->nd, 3->rd, else th */
-const nth = (n) => {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return s[(v - 20) % 10] || s[v] || s[0];
-};
-
 /* Make JSON parsing tolerant of JSONC: strips // line + /* block comments and
    trailing commas. String-aware so it never touches // or commas inside quoted
    values (e.g. "https://..." in a description). */
@@ -905,34 +898,48 @@ function App() {
     return m;
   }, [roster]);
 
-  /* "enabledEvery": an option may only be applied to every nth unit of a type.
-     Flags the excess units (beyond floor(total/n)) that have it applied. */
-  const enabledEveryWarnings = useMemo(() => {
-    const result = {}; // instanceId -> [messages]
+  /* "enabledEvery": an option is only unlocked on every nth unit of a type
+     (positions n, 2n, 3n...). Returns instanceId -> Set of LOCKED option names. */
+  const enabledEveryLocks = useMemo(() => {
+    const result = {};
     const byUnit = {};
     roster.forEach((i) => {
       (byUnit[i.unitId] = byUnit[i.unitId] || []).push(i);
     });
     Object.values(byUnit).forEach((list) => {
-      const total = list.length;
       const defs = (list[0].optionalEquipment || []).filter(
         (e) => e.enabledEvery != null && e.enabledEvery > 0
       );
-      defs.forEach((def) => {
-        const n = def.enabledEvery;
-        const allowed = Math.floor(total / n);
-        const equippedList = list.filter((i) => i.equipped.includes(def.name));
-        if (equippedList.length > allowed) {
-          equippedList.slice(allowed).forEach((i) => {
-            (result[i.instanceId] = result[i.instanceId] || []).push(
-              `'${def.name}' may only be applied to every ${n}${nth(n)} ${i.name} — max ${allowed} of ${total} in the roster.`
-            );
-          });
-        }
+      list.forEach((inst, idx) => {
+        const pos = idx + 1; // 1-based position among same unit id
+        defs.forEach((def) => {
+          const unlocked = pos % def.enabledEvery === 0; // only every nth unit
+          if (!unlocked) {
+            (result[inst.instanceId] = result[inst.instanceId] || new Set()).add(def.name);
+          }
+        });
       });
     });
     return result;
   }, [roster]);
+
+  /* Auto-disable any equipped option that has become locked (e.g. after
+     deletions/reordering drop the count below the enabledEvery threshold). */
+  useEffect(() => {
+    let changed = false;
+    const cleaned = roster.map((i) => {
+      const locked = enabledEveryLocks[i.instanceId];
+      if (!locked) return i;
+      const nextEquipped = i.equipped.filter((name) => !locked.has(name));
+      if (nextEquipped.length !== i.equipped.length) {
+        changed = true;
+        return { ...i, equipped: nextEquipped };
+      }
+      return i;
+    });
+    if (changed) setRoster(cleaned);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabledEveryLocks]);
 
   const warnings = useMemo(() => {
     if (!army) return [];
@@ -1314,7 +1321,7 @@ function App() {
                   total={roster.length}
                   equipUsage={equipUsage}
                   rosterCounts={rosterCounts}
-                  extraWarnings={enabledEveryWarnings[inst.instanceId] || []}
+                  enabledEveryLocked={enabledEveryLocks[inst.instanceId]}
                   onChangeBases={changeBases}
                   onToggleEquip={toggleEquipment}
                   onDuplicate={duplicateUnit}
@@ -1536,7 +1543,7 @@ function RosterRow({
   total,
   equipUsage,
   rosterCounts,
-  extraWarnings = [],
+  enabledEveryLocked,
   onChangeBases,
   onToggleEquip,
   onDuplicate,
@@ -1555,28 +1562,23 @@ function RosterRow({
   const unmetRequires = (inst.requires || []).filter(
     (r) => (rosterCounts?.[r.unitId] || 0) < r.count
   );
-  const rowWarnings = [
-    ...unmetRequires.map(
-      (r) => `Requires at least ${r.count} × ${r.name} in the roster (currently ${rosterCounts?.[r.unitId] || 0}).`
-    ),
-    ...extraWarnings,
-  ];
 
   return (
     <div
       data-testid={`roster-row-${inst.instanceId}`}
       className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
     >
-      {rowWarnings.length > 0 && (
+      {unmetRequires.length > 0 && (
         <div
           data-testid={`unit-requires-warning-${inst.instanceId}`}
           className="mb-3 rounded-lg border border-amber-700/50 bg-amber-500/10 text-amber-300 px-3 py-2 font-cond text-sm flex items-start gap-2"
         >
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           <span>
-            {rowWarnings.map((msg, k) => (
-              <span key={k} className="block">
-                {msg}
+            {unmetRequires.map((r) => (
+              <span key={r.unitId} className="block">
+                Requires at least {r.count} × {r.name} in the roster (currently{" "}
+                {rosterCounts?.[r.unitId] || 0}).
               </span>
             ))}
           </span>
@@ -1733,7 +1735,8 @@ function RosterRow({
                 const on = inst.equipped.includes(eq.name);
                 const usedCount = equipUsage?.[inst.unitId]?.[eq.name] || 0;
                 const atMaxUnits = eq.maxUnits != null && !on && usedCount >= eq.maxUnits;
-                const blocked = (!on && disabledNames.has(eq.name)) || atMaxUnits;
+                const everyLocked = enabledEveryLocked?.has(eq.name) || false;
+                const blocked = (!on && (disabledNames.has(eq.name) || everyLocked)) || atMaxUnits;
                 return (
                   <label
                     key={eq.name}
