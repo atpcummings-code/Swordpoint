@@ -626,6 +626,7 @@ function computeUnit(inst) {
 
   const isSkirm = rules.some(isSkirmRule);
   const effMax = isSkirm ? Math.min(inst.maxBases, 6) : inst.maxBases;
+  const effMin = isSkirm ? 2 : inst.minBases;
 
   // Secondary attachment
   let secondary = null;
@@ -645,7 +646,7 @@ function computeUnit(inst) {
   }
 
   const total = ppb * inst.bases + (secondary ? secondary.points : 0);
-  return { ppb, defence, cohesion, rules, isSkirm, effMax, total, active, secondary };
+  return { ppb, defence, cohesion, rules, isSkirm, effMax, effMin, total, active, secondary };
 }
 
 /* ------------------------------------------------------------------ */
@@ -736,9 +737,10 @@ function App() {
 
   const changeBases = (instanceId, delta) => {
     updateInst(instanceId, (i) => {
-      const { effMax } = computeUnit(i);
-      const next = Math.min(Math.max(i.bases + delta, i.minBases || 1), effMax);
-      return { ...i, bases: Math.max(next, 1) };
+      const { effMax, effMin } = computeUnit(i);
+      const lo = Math.max(effMin || 1, 1);
+      const next = Math.min(Math.max(i.bases + delta, lo), effMax);
+      return { ...i, bases: next };
     });
   };
 
@@ -749,10 +751,11 @@ function App() {
         ? i.equipped.filter((n) => n !== equipName)
         : [...i.equipped, equipName];
       let next = { ...i, equipped };
-      // Skirmisher rule override — hard clamp bases to 6 when activated
-      const { isSkirm, effMax } = computeUnit(next);
+      // Skirmisher rule override — clamp bases into [2, 6] when activated
+      const { isSkirm, effMax, effMin } = computeUnit(next);
       if (isSkirm && next.bases > 6) next = { ...next, bases: 6 };
       if (next.bases > effMax) next = { ...next, bases: effMax };
+      if (next.bases < effMin) next = { ...next, bases: effMin };
       return next;
     });
   };
@@ -1431,7 +1434,7 @@ function RosterRow({
     inst.sourceArmyKey && armies[inst.sourceArmyKey]
       ? armies[inst.sourceArmyKey].armyName
       : null;
-  const atMin = inst.bases <= (inst.minBases || 1);
+  const atMin = inst.bases <= (calc.effMin || 1);
   const atMax = inst.bases >= calc.effMax;
 
   return (
@@ -1498,7 +1501,7 @@ function RosterRow({
               {inst.bases}
             </div>
             <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
-              bases ({inst.minBases}–{calc.effMax})
+              bases ({calc.effMin}–{calc.effMax})
             </div>
           </div>
           <button
