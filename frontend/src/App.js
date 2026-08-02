@@ -193,7 +193,19 @@ const MOCK_DATA = {
               equipmentAdded: ["Warhorse"],
               equipmentRemoved: [],
               disables: ["Throwing Spears"],
+              enableHidden: ["Warhorse Barding"],
               defenceModifier: 0,
+              cohesionModifier: 0,
+            },
+            {
+              name: "Warhorse Barding",
+              pointsModifier: 1,
+              rulesAdded: [],
+              rulesRemoved: [],
+              equipmentAdded: ["Barding"],
+              equipmentRemoved: [],
+              hiddenUntilEnabled: "hidden",
+              defenceModifier: -1,
               cohesionModifier: 0,
             },
           ],
@@ -517,6 +529,31 @@ const uid = () =>
 
 const isSkirmRule = (r) => /skirmish/i.test(String(r));
 
+/* Drop any equipped option that is hidden and no longer revealed by another
+   equipped option (cascades). Used when a reveal source is deselected. */
+function pruneHidden(optionalEquipment, equipped) {
+  let cur = [...equipped];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const revealed = new Set(
+      cur
+        .map((n) => optionalEquipment.find((e) => e.name === n))
+        .filter(Boolean)
+        .flatMap((e) => e.enableHidden || [])
+    );
+    const next = cur.filter((name) => {
+      const e = optionalEquipment.find((x) => x.name === name);
+      return e?.hiddenUntilEnabled !== "hidden" || revealed.has(name);
+    });
+    if (next.length !== cur.length) {
+      cur = next;
+      changed = true;
+    }
+  }
+  return cur;
+}
+
 /* Coerce values like "+3", "-8", " 5 " to real numbers; leaves null/undefined alone. */
 const num = (v) => {
   if (typeof v === "number") return v;
@@ -803,6 +840,8 @@ function App() {
         const disables = item?.disables || [];
         equipped = [...i.equipped.filter((n) => !disables.includes(n)), equipName];
       }
+      // prune any now-hidden items (their reveal source was deselected)
+      equipped = pruneHidden(i.optionalEquipment, equipped);
       let next = { ...i, equipped };
       // Skirmisher rule override — clamp bases into [2, 6] when activated
       const { isSkirm, effMax, effMin } = computeUnit(next);
@@ -1846,7 +1885,14 @@ function RosterRow({
                   .filter((e) => inst.equipped.includes(e.name))
                   .flatMap((e) => e.disables || [])
               );
+              const revealedNames = new Set(
+                inst.optionalEquipment
+                  .filter((e) => inst.equipped.includes(e.name))
+                  .flatMap((e) => e.enableHidden || [])
+              );
               return inst.optionalEquipment.map((eq) => {
+                // hidden until revealed by a selected item's enableHidden
+                if (eq.hiddenUntilEnabled === "hidden" && !revealedNames.has(eq.name)) return null;
                 const on = inst.equipped.includes(eq.name);
                 const usedCount = equipUsage?.[inst.unitId]?.[eq.name] || 0;
                 const atMaxUnits = eq.maxUnits != null && !on && usedCount >= eq.maxUnits;
