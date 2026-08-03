@@ -319,6 +319,12 @@ const MOCK_DATA = {
           pointsPerBase: 4,
           minBases: 2,
           maxBases: 6,
+          requires: {
+            unitId: "welsh_teulu_foot",
+            count: 2,
+            name: "Teulu Foot",
+            perUnit: true,
+          },
           specialRules: ["Inferior Fighters", "Skirmishers"],
           optionalEquipment: [],
         },
@@ -663,7 +669,7 @@ function normalizeRequires(req) {
   const arr = Array.isArray(req) ? req : [req];
   return arr
     .filter((r) => r && r.unitId)
-    .map((r) => ({ unitId: r.unitId, count: r.count ?? 1, name: r.name || r.unitId }));
+    .map((r) => ({ unitId: r.unitId, count: r.count ?? 1, name: r.name || r.unitId, perUnit: !!r.perUnit }));
 }
 
 const GLOBAL_RATIOS = [25, 33, 50, 67, 75];
@@ -1713,26 +1719,39 @@ function RosterRow({
   const atMin = inst.bases <= (calc.effMin || 1);
   const atMax = inst.bases >= calc.effMax;
 
-  const unmetRequires = (inst.requires || []).filter(
-    (r) => (rosterCounts?.[r.unitId] || 0) < r.count
-  );
+  const requireWarnings = [];
+  (inst.requires || []).forEach((r) => {
+    const have = rosterCounts?.[r.unitId] || 0;
+    if (r.perUnit) {
+      const permitted = Math.floor(have / r.count);
+      const thisCount = rosterCounts?.[inst.unitId] || 0;
+      if (thisCount > permitted) {
+        requireWarnings.push(
+          `Only ${permitted} × ${inst.name} permitted (1 per ${r.count} ${r.name}) — currently ${thisCount} in the roster.`
+        );
+      }
+    } else if (have < r.count) {
+      requireWarnings.push(
+        `Requires at least ${r.count} × ${r.name} in the roster (currently ${have}).`
+      );
+    }
+  });
 
   return (
     <div
       data-testid={`roster-row-${inst.instanceId}`}
       className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
     >
-      {unmetRequires.length > 0 && (
+      {requireWarnings.length > 0 && (
         <div
           data-testid={`unit-requires-warning-${inst.instanceId}`}
           className="mb-3 rounded-lg border border-amber-700/50 bg-amber-500/10 text-amber-300 px-3 py-2 font-cond text-sm flex items-start gap-2"
         >
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           <span>
-            {unmetRequires.map((r) => (
-              <span key={r.unitId} className="block">
-                Requires at least {r.count} × {r.name} in the roster (currently{" "}
-                {rosterCounts?.[r.unitId] || 0}).
+            {requireWarnings.map((msg, k) => (
+              <span key={k} className="block">
+                {msg}
               </span>
             ))}
           </span>
