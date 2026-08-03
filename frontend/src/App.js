@@ -2138,10 +2138,7 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
         <tbody>
           {computed.map(({ inst, calc }) => {
             const isCommander = isCommanderCat(inst.categoryId) || inst.type === "General";
-            const combinedEquipment = [
-              ...calc.equipment,
-              ...calc.active.map((e) => e.name),
-            ].filter((v, idx, arr) => arr.indexOf(v) === idx);
+            const combinedEquipment = calc.equipment;
             return (
               <React.Fragment key={inst.instanceId}>
                 <tr style={{ verticalAlign: "top" }}>
