@@ -884,10 +884,11 @@ function App() {
             usage[n] = (usage[n] || 0) + 1;
           });
       });
-      // drop any equipment on the clone that would exceed its maxUnits limit
+      // drop any equipment on the clone that would exceed its limit
       const cloneEquipped = src.equipped.filter((name) => {
         const opt = src.optionalEquipment.find((e) => e.name === name);
-        return !(opt?.maxUnits != null && (usage[name] || 0) >= opt.maxUnits);
+        const lim = opt ? opt.maxEquipmentCount ?? opt.maxUnits : null;
+        return !(lim != null && (usage[name] || 0) >= lim);
       });
       const clone = {
         ...src,
@@ -1015,6 +1016,33 @@ function App() {
     if (changed) setRoster(cleaned);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabledEveryLocks]);
+
+  /* "maxEquipmentCount": how many units of a type may carry an option across the
+     roster. Flags the excess units (beyond the limit) that currently have it. */
+  const maxEquipWarnings = useMemo(() => {
+    const result = {}; // instanceId -> [messages]
+    const byUnit = {};
+    roster.forEach((i) => {
+      (byUnit[i.unitId] = byUnit[i.unitId] || []).push(i);
+    });
+    Object.values(byUnit).forEach((list) => {
+      const defs = (list[0].optionalEquipment || []).filter(
+        (e) => (e.maxEquipmentCount ?? e.maxUnits) != null
+      );
+      defs.forEach((def) => {
+        const limit = def.maxEquipmentCount ?? def.maxUnits;
+        const equippedList = list.filter((i) => i.equipped.includes(def.name));
+        if (equippedList.length > limit) {
+          equippedList.slice(limit).forEach((i) => {
+            (result[i.instanceId] = result[i.instanceId] || []).push(
+              `'${def.name}' is applied to ${equippedList.length} ${i.name}, but only ${limit} allowed across the roster.`
+            );
+          });
+        }
+      });
+    });
+    return result;
+  }, [roster]);
 
   const warnings = useMemo(() => {
     if (!army) return [];
@@ -1914,7 +1942,8 @@ function RosterRow({
                 if (eq.hiddenUntilEnabled === "hidden" && !revealedNames.has(eq.name)) return null;
                 const on = inst.equipped.includes(eq.name);
                 const usedCount = equipUsage?.[inst.unitId]?.[eq.name] || 0;
-                const atMaxUnits = eq.maxUnits != null && !on && usedCount >= eq.maxUnits;
+                const eqLimit = eq.maxEquipmentCount ?? eq.maxUnits;
+                const atMaxUnits = eqLimit != null && !on && usedCount >= eqLimit;
                 const everyLocked = enabledEveryLocked?.has(eq.name) || false;
                 const blocked = (!on && (disabledNames.has(eq.name) || everyLocked)) || atMaxUnits;
                 return (
