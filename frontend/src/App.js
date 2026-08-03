@@ -2129,13 +2129,19 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
             <th style={{ padding: "4px" }}>Atk</th>
             <th style={{ padding: "4px" }}>Def</th>
             <th style={{ padding: "4px" }}>Coh</th>
-            <th style={{ padding: "4px" }}>Rules</th>
+            <th style={{ padding: "4px" }}>Pts/Base</th>
+            <th style={{ padding: "4px" }}>Pts/Options</th>
+            <th style={{ padding: "4px" }}>Total</th>
             <th style={{ padding: "4px", textAlign: "right" }}>Points</th>
           </tr>
         </thead>
         <tbody>
           {computed.map(({ inst, calc }) => {
             const isCommander = isCommanderCat(inst.categoryId) || inst.type === "General";
+            const combinedEquipment = [
+              ...calc.equipment,
+              ...calc.active.map((e) => e.name),
+            ].filter((v, idx, arr) => arr.indexOf(v) === idx);
             return (
               <React.Fragment key={inst.instanceId}>
                 <tr style={{ verticalAlign: "top" }}>
@@ -2145,22 +2151,26 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
                   <td style={{ padding: "4px 4px 1px" }}>{isCommander ? inst.attacks ?? "-" : "-"}</td>
                   <td style={{ padding: "4px 4px 1px" }}>{calc.defence ?? "-"}</td>
                   <td style={{ padding: "4px 4px 1px" }}>{calc.cohesion ?? "-"}</td>
-                  <td style={{ padding: "4px 4px 1px" }}>{calc.rules.join(", ")}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{inst.basePointsPerBase}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{calc.ppb - inst.basePointsPerBase}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{calc.ppb}</td>
                   <td style={{ padding: "4px 4px 1px", textAlign: "right", fontWeight: 600 }}>{calc.total}</td>
                 </tr>
-                <tr style={{ borderBottom: inst.equipped.length ? "none" : "1px solid #cbd5e1" }}>
-                  <td colSpan={8} style={{ padding: "0 4px 5px", fontStyle: "italic", color: "#475569", fontSize: "11px" }}>
+                <tr>
+                  <td colSpan={10} style={{ padding: "0 4px 3px", fontStyle: "italic", color: "#475569", fontSize: "11px" }}>
                     {inst.description || "-"}
                   </td>
                 </tr>
-                {inst.equipped.length > 0 && (
-                  <tr style={{ borderBottom: "1px solid #cbd5e1" }}>
-                    <td colSpan={8} style={{ padding: "0 4px 5px", fontSize: "11px", color: "#0f172a" }}>
-                      <strong>Optional Equipment:</strong>{" "}
-                      {calc.active.map((e) => e.name).join(", ")}
-                    </td>
-                  </tr>
-                )}
+                <tr>
+                  <td colSpan={10} style={{ padding: "0 4px 3px", fontSize: "11px", color: "#0f172a" }}>
+                    <strong>Special Rules:</strong> {calc.rules.length ? calc.rules.join(", ") : "-"}
+                  </td>
+                </tr>
+                <tr style={{ borderBottom: "1px solid #cbd5e1" }}>
+                  <td colSpan={10} style={{ padding: "0 4px 5px", fontSize: "11px", color: "#0f172a" }}>
+                    <strong>Equipment:</strong> {combinedEquipment.length ? combinedEquipment.join(", ") : "-"}
+                  </td>
+                </tr>
               </React.Fragment>
             );
           })}
