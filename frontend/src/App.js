@@ -2161,15 +2161,22 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
                     {inst.description || "-"}
                   </td>
                 </tr>
-                <tr>
-                  <td colSpan={10} style={{ padding: "0 4px 3px", fontSize: "11px", color: "#0f172a" }}>
-                    <strong>Special Rules:</strong> {calc.rules.length ? calc.rules.join(", ") : "-"}
-                  </td>
-                </tr>
+                {calc.rules.length > 0 && (
+                  <tr>
+                    <td colSpan={10} style={{ padding: "0 4px 3px", fontSize: "11px", color: "#0f172a" }}>
+                      <strong>Special Rules:</strong> {calc.rules.join(", ")}
+                    </td>
+                  </tr>
+                )}
+                {combinedEquipment.length > 0 && (
+                  <tr>
+                    <td colSpan={10} style={{ padding: "0 4px 5px", fontSize: "11px", color: "#0f172a" }}>
+                      <strong>Equipment:</strong> {combinedEquipment.join(", ")}
+                    </td>
+                  </tr>
+                )}
                 <tr style={{ borderBottom: "1px solid #cbd5e1" }}>
-                  <td colSpan={10} style={{ padding: "0 4px 5px", fontSize: "11px", color: "#0f172a" }}>
-                    <strong>Equipment:</strong> {combinedEquipment.length ? combinedEquipment.join(", ") : "-"}
-                  </td>
+                  <td colSpan={10} style={{ padding: 0 }} />
                 </tr>
               </React.Fragment>
             );
