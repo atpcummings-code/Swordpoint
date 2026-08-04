@@ -263,6 +263,7 @@ const MOCK_DATA = {
           pointsPerBase: 9,
           minBases: 3,
           maxBases: 12,
+          requires: { self: true, count: 2, name: "Tenant Foot Spearmen" },
           specialRules: ["Warband", "Open Order"],
           optionalEquipment: [
             {
@@ -699,17 +700,24 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     secondaryRatio: null,
     minCountAllowed: unit.minCountAllowed ?? null,
     maxCountAllowed: unit.maxCountAllowed ?? null,
-    requires: normalizeRequires(unit.requires),
+    requires: normalizeRequires(unit.requires, unit.id),
   };
 }
 
-/* Normalize a unit's "requires" into an array of { unitId, count, name } */
-function normalizeRequires(req) {
+/* Normalize a unit's "requires" into an array of { unitId, count, name, perUnit, self }.
+   When `self` is true, the requirement targets the unit's own id (selfId). */
+function normalizeRequires(req, selfId) {
   if (!req) return [];
   const arr = Array.isArray(req) ? req : [req];
   return arr
-    .filter((r) => r && r.unitId)
-    .map((r) => ({ unitId: r.unitId, count: r.count ?? 1, name: r.name || r.unitId, perUnit: !!r.perUnit }));
+    .filter((r) => r && (r.unitId || r.self))
+    .map((r) => ({
+      unitId: r.self ? selfId : r.unitId,
+      count: r.count ?? 1,
+      name: r.name || (r.self ? "this unit" : r.unitId),
+      perUnit: !!r.perUnit,
+      self: !!r.self,
+    }));
 }
 
 const GLOBAL_RATIOS = [25, 33, 50, 67, 75];
@@ -1279,6 +1287,24 @@ function App() {
           });
         }
       }
+    });
+
+    /* --- self "requires": a unit present in the roster must appear at least
+       `count` times (own id). Warning surfaces here, army-wide. --- */
+    const seenSelf = new Set();
+    roster.forEach((i) => {
+      if (seenSelf.has(i.unitId)) return;
+      seenSelf.add(i.unitId);
+      (i.requires || []).forEach((r) => {
+        if (!r.self) return;
+        const c = counts[i.unitId] || 0;
+        if (c < r.count) {
+          w.push({
+            level: "warning",
+            msg: `Validation Error: This army must include at least ${r.count} units of '${i.name}' (Current: ${c}).`,
+          });
+        }
+      });
     });
 
     /* --- basesComparison: compare total bases of units with an option enabled
@@ -1875,6 +1901,7 @@ function RosterRow({
 
   const requireWarnings = [];
   (inst.requires || []).forEach((r) => {
+    if (r.self) return; // self-requirement is shown in army-wide validation
     const have = rosterCounts?.[r.unitId] || 0;
     if (r.perUnit) {
       const permitted = Math.floor(have / r.count);
