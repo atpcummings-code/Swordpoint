@@ -1632,11 +1632,13 @@ function App() {
       >
         {/* ====== LEFT: Army Composition ====== */}
         <section data-testid="catalog-panel" className="min-w-0 pr-3" style={{ height: "100%", overflowY: "auto", scrollbarGutter: "stable" }}>
-          <div className="flex items-center gap-2 mb-4 sticky top-0 z-20 bg-[#020617] py-2">
-            <Users size={18} className="text-slate-400" />
-            <h2 className="font-display text-lg font-bold tracking-wide text-slate-200">
-              {army?.armyName || "Army Composition"}
-            </h2>
+          <div className="sticky top-0 z-20 bg-[#020617] py-2 mb-4">
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900/70 border border-slate-800">
+              <Users size={18} className="text-slate-400" />
+              <h2 className="font-display text-lg font-bold tracking-wide text-slate-200">
+                {army?.armyName || "Army Composition"}
+              </h2>
+            </div>
           </div>
 
           {/* Category constraints table */}
@@ -1665,11 +1667,13 @@ function App() {
         {/* ====== RIGHT: Roster ====== */}
         <section data-testid="roster-panel" className="min-w-0 pr-3" style={{ height: "100%", overflowY: "auto", scrollbarGutter: "stable" }}>
           {/* Column header — sticky; opaque bg extends to meet the summary box */}
-          <div className="flex items-center gap-2 sticky top-0 z-30 bg-[#020617] pt-2 pb-4">
-            <Flag size={18} className="text-slate-400" />
-            <h2 className="font-display text-lg font-bold tracking-wide text-slate-100">
-              Active Army Roster
-            </h2>
+          <div className="sticky top-0 z-30 bg-[#020617] pt-2 pb-4">
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900/70 border border-slate-800">
+              <Flag size={18} className="text-slate-400" />
+              <h2 className="font-display text-lg font-bold tracking-wide text-slate-100">
+                Active Army Roster
+              </h2>
+            </div>
           </div>
 
           {/* Validation panel — sticky so it stays visible while scrolling */}
@@ -1887,7 +1891,7 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
 
 function CatalogUnit({ unit, onAddUnit, armyKey, categoryOverride, blocked }) {
   return (
-    <div className={`rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2.5 flex items-start justify-between gap-3 transition-colors ${blocked ? "opacity-50" : "hover:border-slate-700"}`}>
+    <div className={`rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2.5 flex items-start justify-between gap-3 transition-all duration-150 ${blocked ? "opacity-50" : "hover:border-emerald-500/70 hover:bg-slate-800/70 hover:shadow-lg hover:shadow-emerald-500/10 hover:-translate-y-0.5"}`}>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           {unit.type === "General" && <Crown size={14} className="text-amber-400 shrink-0" />}
@@ -1960,7 +1964,7 @@ function RosterRow({
   return (
     <div
       data-testid={`roster-row-${inst.instanceId}`}
-      className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
+      className="rounded-xl border border-slate-700 bg-slate-800/50 p-4"
     >
       {requireWarnings.length > 0 && (
         <div
