@@ -55,6 +55,14 @@ const MOCK_DATA = {
           ratio: 0.5,
         },
       ],
+      unitCountValidation: [
+        {
+          left: ["welsh_skirmishers"],
+          right: ["welsh_teulu_foot"],
+          expression: "lessThanOrEqual",
+          ratio: 1,
+        },
+      ],
       categories: [
         { id: "commanders", name: "Commanders", constraintType: "count", min: 1, max: 8 },
         { id: "teulu", name: "Teulu", constraintType: "percentage", min: 0, max: 33 },
@@ -1386,6 +1394,30 @@ function App() {
           msg: `${nameOf(rule.unitId)} bases (${leftTotal}) must be ${expr.label} ${ratio}× the bases of ${compareWith
             .map((id) => nameOf(id))
             .join(" + ")} (${rightSum}) = ${threshold}.`,
+        });
+      }
+    });
+
+    /* --- unitCountValidation: compare the total unit count of the left ids
+       against a ratio of the total unit count of the right ids --- */
+    const asArr = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+    (army.unitCountValidation || []).forEach((rule) => {
+      if (!rule || !rule.expression) return;
+      const leftIds = asArr(rule.left ?? rule.leftUnitIds ?? rule.leftIds);
+      const rightIds = asArr(rule.right ?? rule.rightUnitIds ?? rule.rightIds);
+      if (leftIds.length === 0 && rightIds.length === 0) return;
+      const ratio = rule.ratio != null ? rule.ratio : 1;
+      const leftCount = leftIds.reduce((s, id) => s + (counts[id] || 0), 0);
+      const rightCount = rightIds.reduce((s, id) => s + (counts[id] || 0), 0);
+      if (leftCount === 0 && rightCount === 0) return;
+      const threshold = rightCount * ratio;
+      const expr = EXPR[rule.expression];
+      if (expr && !expr.test(leftCount, threshold)) {
+        w.push({
+          level: "warning",
+          msg: `Unit count for ${leftIds.map((id) => nameOf(id)).join(" + ")} (${leftCount}) must be ${expr.label} ${ratio}× the count of ${rightIds
+            .map((id) => nameOf(id))
+            .join(" + ")} (${rightCount}) = ${threshold}.`,
         });
       }
     });
