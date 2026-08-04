@@ -1463,7 +1463,7 @@ function App() {
   return (
     <div className="sp-app text-slate-100 pb-16">
       {/* ---------- Top bar ---------- */}
-      <header className="no-print border-b border-slate-800/80 bg-slate-950/70 backdrop-blur sticky top-0 z-30">
+      <header className="no-print border-b border-slate-800/80 bg-[#020617] sticky top-0 z-50">
         <div className="max-w-[1400px] mx-auto px-6 py-4 flex flex-col items-center gap-3">
           <div className="flex items-center gap-3">
             <Swords className="text-emerald-400" size={28} />
