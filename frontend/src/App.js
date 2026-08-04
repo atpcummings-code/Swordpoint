@@ -306,6 +306,35 @@ const MOCK_DATA = {
               defenceModifier: 0,
               cohesionModifier: 0,
             },
+            {
+              name: "War Banner",
+              pointsModifier: 5,
+              rulesAdded: ["War Banner"],
+              rulesRemoved: [],
+              defenceModifier: 0,
+              cohesionModifier: 0,
+              // fixed threshold: only if at least 2 Tenant Foot Spearmen are present
+              enabledWhenUnitsPresent: {
+                unitId: "welsh_tenants_spearmen",
+                count: 2,
+                name: "Tenant Foot Spearmen",
+              },
+            },
+            {
+              name: "Marksman",
+              pointsModifier: 3,
+              rulesAdded: ["Marksman"],
+              rulesRemoved: [],
+              defenceModifier: 0,
+              cohesionModifier: 0,
+              // ratio: 1 Marksman per 2 Tenant Foot Spearmen in the roster
+              enabledWhenUnitsPresent: {
+                unitId: "welsh_tenants_spearmen",
+                count: 2,
+                name: "Tenant Foot Spearmen",
+                perUnit: true,
+              },
+            },
           ],
         },
         {
@@ -999,12 +1028,65 @@ function App() {
     return result;
   }, [roster]);
 
+  /* "enabledWhenUnitsPresent": an option is only available while enough units of
+     a referenced unit id are in the roster.
+       - fixed threshold (perUnit absent/false): available only when the referenced
+         unit count >= count; otherwise locked on every instance of this unit.
+       - ratio (perUnit true): floor(referenced count / count) instances of this
+         unit may carry the option (a shared pool); the rest are locked.
+     Returns instanceId -> Set of LOCKED option names. */
+  const unitsPresentLocks = useMemo(() => {
+    const result = {};
+    const byUnit = {};
+    roster.forEach((i) => {
+      (byUnit[i.unitId] = byUnit[i.unitId] || []).push(i);
+    });
+    const lock = (inst, name) =>
+      (result[inst.instanceId] = result[inst.instanceId] || new Set()).add(name);
+    Object.values(byUnit).forEach((list) => {
+      const defs = (list[0].optionalEquipment || []).filter((e) => e.enabledWhenUnitsPresent);
+      defs.forEach((def) => {
+        const cfg = def.enabledWhenUnitsPresent;
+        const threshold = cfg.count ?? 1;
+        const targetCount = rosterCounts[cfg.unitId] || 0;
+        if (cfg.perUnit) {
+          const allowedSlots = threshold > 0 ? Math.floor(targetCount / threshold) : 0;
+          const equippedList = list.filter((i) => i.equipped.includes(def.name));
+          // lock the excess equipped instances beyond the allowed pool
+          equippedList.slice(allowedSlots).forEach((i) => lock(i, def.name));
+          const filled = Math.min(equippedList.length, allowedSlots);
+          if (filled >= allowedSlots) {
+            // no free slots left: lock the option on any not-yet-equipped instance
+            list.forEach((i) => {
+              if (!i.equipped.includes(def.name)) lock(i, def.name);
+            });
+          }
+        } else if (targetCount < threshold) {
+          list.forEach((i) => lock(i, def.name));
+        }
+      });
+    });
+    return result;
+  }, [roster, rosterCounts]);
+
+  /* Merge all option-locking sources (enabledEvery + enabledWhenUnitsPresent). */
+  const equipLocks = useMemo(() => {
+    const merged = {};
+    [enabledEveryLocks, unitsPresentLocks].forEach((src) => {
+      Object.entries(src).forEach(([id, set]) => {
+        merged[id] = merged[id] || new Set();
+        set.forEach((n) => merged[id].add(n));
+      });
+    });
+    return merged;
+  }, [enabledEveryLocks, unitsPresentLocks]);
+
   /* Auto-disable any equipped option that has become locked (e.g. after
-     deletions/reordering drop the count below the enabledEvery threshold). */
+     deletions/reordering drop the count below a threshold or ratio). */
   useEffect(() => {
     let changed = false;
     const cleaned = roster.map((i) => {
-      const locked = enabledEveryLocks[i.instanceId];
+      const locked = equipLocks[i.instanceId];
       if (!locked) return i;
       const nextEquipped = i.equipped.filter((name) => !locked.has(name));
       if (nextEquipped.length !== i.equipped.length) {
@@ -1015,7 +1097,7 @@ function App() {
     });
     if (changed) setRoster(cleaned);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabledEveryLocks]);
+  }, [equipLocks]);
 
   /* "maxEquipmentCount": how many units of a type may carry an option across the
      roster. Flags the excess units (beyond the limit) that currently have it. */
@@ -1508,7 +1590,7 @@ function App() {
                   total={roster.length}
                   equipUsage={equipUsage}
                   rosterCounts={rosterCounts}
-                  enabledEveryLocked={enabledEveryLocks[inst.instanceId]}
+                  enabledEveryLocked={equipLocks[inst.instanceId]}
                   onChangeBases={changeBases}
                   onToggleEquip={toggleEquipment}
                   onDuplicate={duplicateUnit}
