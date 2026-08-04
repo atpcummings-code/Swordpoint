@@ -1553,7 +1553,7 @@ function App() {
             {army && (
               <div
                 data-testid="header-roster-summary"
-                className="rounded-xl border-2 border-emerald-400 p-3 backdrop-blur bg-slate-950/90"
+                className="rounded-xl border-2 border-emerald-400 p-3 backdrop-blur bg-slate-950/90 w-[520px] shrink-0"
               >
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <span className="font-cond uppercase text-[11px] tracking-widest text-slate-500">
