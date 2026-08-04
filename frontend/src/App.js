@@ -1471,47 +1471,107 @@ function App() {
             </div>
           )}
 
-          {/* Supplement + Army dropdowns */}
-          <div className="flex items-end gap-6 mt-1 flex-wrap justify-center">
-            <div className="flex flex-col items-start gap-1">
-              <label htmlFor="supplement-select" className="font-cond uppercase text-xs tracking-widest text-slate-500">
-                Supplement
-              </label>
-              <select
-                id="supplement-select"
-                data-testid="supplement-select"
-                value={selectedSupplementUrl}
-                onChange={(e) => handleSupplementChange(e.target.value)}
-                className="bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 min-w-[260px] cursor-pointer"
-              >
-                <option value="">— Select a supplement —</option>
-                {SUPPLEMENTS.map((s) => (
-                  <option key={s.url} value={s.url}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {data && (
+          {/* Supplement + Army dropdowns (left) · Roster summary (right) */}
+          <div className="flex items-end justify-between gap-6 mt-1 w-full flex-wrap">
+            <div className="flex items-end gap-6 flex-wrap">
               <div className="flex flex-col items-start gap-1">
-                <label htmlFor="army-select" className="font-cond uppercase text-xs tracking-widest text-slate-500">
-                  Army
+                <label htmlFor="supplement-select" className="font-cond uppercase text-xs tracking-widest text-slate-500">
+                  Supplement
                 </label>
                 <select
-                  id="army-select"
-                  data-testid="army-select"
-                  value={selectedArmyKey}
-                  onChange={(e) => handleArmyChange(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 min-w-[280px] cursor-pointer"
+                  id="supplement-select"
+                  data-testid="supplement-select"
+                  value={selectedSupplementUrl}
+                  onChange={(e) => handleSupplementChange(e.target.value)}
+                  className="bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 min-w-[260px] cursor-pointer"
                 >
-                  <option value="">— Select an army —</option>
-                  {armyKeys.map((k) => (
-                    <option key={k} value={k}>
-                      {armies[k].armyName}
+                  <option value="">— Select a supplement —</option>
+                  {SUPPLEMENTS.map((s) => (
+                    <option key={s.url} value={s.url}>
+                      {s.name}
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {data && (
+                <div className="flex flex-col items-start gap-1">
+                  <label htmlFor="army-select" className="font-cond uppercase text-xs tracking-widest text-slate-500">
+                    Army
+                  </label>
+                  <select
+                    id="army-select"
+                    data-testid="army-select"
+                    value={selectedArmyKey}
+                    onChange={(e) => handleArmyChange(e.target.value)}
+                    className="bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 min-w-[280px] cursor-pointer"
+                  >
+                    <option value="">— Select an army —</option>
+                    {armyKeys.map((k) => (
+                      <option key={k} value={k}>
+                        {armies[k].armyName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Roster summary box (moved from the roster column) */}
+            {army && (
+              <div
+                data-testid="header-roster-summary"
+                className="rounded-xl border-2 border-emerald-400 p-3 backdrop-blur bg-slate-950/90"
+              >
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <span className="font-cond uppercase text-[11px] tracking-widest text-slate-500">
+                    Roster Summary
+                  </span>
+                  <StatusBadge isValid={isValid} empty={roster.length === 0} />
+                </div>
+
+                <div className="mt-2 flex items-end justify-between gap-4 flex-wrap">
+                  <div className="flex flex-col">
+                    <label
+                      htmlFor="max-points"
+                      className="font-cond uppercase text-[11px] tracking-widest text-slate-500 mb-1"
+                    >
+                      Max Points Limit
+                    </label>
+                    <input
+                      id="max-points"
+                      data-testid="max-points-input"
+                      type="number"
+                      min={0}
+                      value={maxPoints}
+                      onChange={(e) => setMaxPoints(Math.max(0, Number(e.target.value) || 0))}
+                      className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 w-28 font-cond text-lg text-slate-100 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div className="text-right">
+                    <div className="font-cond uppercase text-[11px] tracking-widest text-slate-500">
+                      Total / Limit
+                    </div>
+                    <div
+                      data-testid="total-points"
+                      className={`font-display text-2xl font-extrabold leading-none ${
+                        totalPoints > maxPoints ? "text-amber-400" : "text-emerald-400"
+                      }`}
+                    >
+                      {totalPoints}
+                      <span className="text-slate-500 text-lg font-semibold"> / {maxPoints}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    data-testid="export-pdf-btn"
+                    onClick={() => window.print()}
+                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-cond font-semibold px-4 py-2 transition-colors"
+                  >
+                    <Printer size={16} /> Export PDF
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1580,61 +1640,8 @@ function App() {
             </h2>
           </div>
 
-          {/* Roster summary box + validation — fixed (sticky) so they don't scroll */}
+          {/* Validation panel — sticky so it stays visible while scrolling */}
           <div className="mb-4 sticky top-[52px] z-20 bg-[#020617] pb-3">
-            <div className="rounded-xl border-2 border-emerald-400 p-4 backdrop-blur bg-slate-950/90">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <span className="font-cond uppercase text-[11px] tracking-widest text-slate-500">
-                  Roster Summary
-                </span>
-                <StatusBadge isValid={isValid} empty={roster.length === 0} />
-              </div>
-
-              <div className="mt-3 flex items-end justify-between gap-4 flex-wrap">
-                <div className="flex flex-col">
-                  <label
-                    htmlFor="max-points"
-                    className="font-cond uppercase text-[11px] tracking-widest text-slate-500 mb-1"
-                  >
-                    Max Points Limit
-                  </label>
-                  <input
-                    id="max-points"
-                    data-testid="max-points-input"
-                    type="number"
-                    min={0}
-                    value={maxPoints}
-                    onChange={(e) => setMaxPoints(Math.max(0, Number(e.target.value) || 0))}
-                    className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 w-32 font-cond text-lg text-slate-100 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <div className="text-right">
-                  <div className="font-cond uppercase text-[11px] tracking-widest text-slate-500">
-                    Total / Limit
-                  </div>
-                  <div
-                    data-testid="total-points"
-                    className={`font-display text-3xl font-extrabold leading-none ${
-                      totalPoints > maxPoints ? "text-amber-400" : "text-emerald-400"
-                    }`}
-                  >
-                    {totalPoints}
-                    <span className="text-slate-500 text-xl font-semibold"> / {maxPoints}</span>
-                  </div>
-                </div>
-
-                <button
-                  data-testid="export-pdf-btn"
-                  onClick={() => window.print()}
-                  className="inline-flex items-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-cond font-semibold px-5 py-2 transition-colors"
-                >
-                  <Printer size={16} /> Export Roster to PDF
-                </button>
-              </div>
-            </div>
-
-            {/* Validation panel */}
             <ValidationPanel warnings={warnings} isValid={isValid} empty={roster.length === 0} />
           </div>
 
