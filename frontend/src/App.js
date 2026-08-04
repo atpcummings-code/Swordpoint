@@ -1631,7 +1631,7 @@ function App() {
         style={{ height: "100vh", overflow: "hidden" }}
       >
         {/* ====== LEFT: Army Composition ====== */}
-        <section data-testid="catalog-panel" className="min-w-0" style={{ height: "100%", overflowY: "auto" }}>
+        <section data-testid="catalog-panel" className="min-w-0 pr-3" style={{ height: "100%", overflowY: "auto", scrollbarGutter: "stable" }}>
           <div className="flex items-center gap-2 mb-4 sticky top-0 z-20 bg-[#020617] py-2">
             <Users size={18} className="text-slate-400" />
             <h2 className="font-display text-lg font-bold tracking-wide text-slate-200">
@@ -1663,7 +1663,7 @@ function App() {
         </section>
 
         {/* ====== RIGHT: Roster ====== */}
-        <section data-testid="roster-panel" className="min-w-0" style={{ height: "100%", overflowY: "auto" }}>
+        <section data-testid="roster-panel" className="min-w-0 pr-3" style={{ height: "100%", overflowY: "auto", scrollbarGutter: "stable" }}>
           {/* Column header — sticky; opaque bg extends to meet the summary box */}
           <div className="flex items-center gap-2 sticky top-0 z-30 bg-[#020617] pt-2 pb-4">
             <Flag size={18} className="text-slate-400" />
