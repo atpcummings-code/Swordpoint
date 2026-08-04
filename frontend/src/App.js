@@ -1891,7 +1891,7 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
 
 function CatalogUnit({ unit, onAddUnit, armyKey, categoryOverride, blocked }) {
   return (
-    <div className={`rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2.5 flex items-start justify-between gap-3 transition-all duration-150 ${blocked ? "opacity-50" : "hover:border-emerald-500/70 hover:bg-slate-800/70 hover:shadow-lg hover:shadow-emerald-500/10 hover:-translate-y-0.5"}`}>
+    <div className={`rounded-lg border border-slate-800 bg-slate-950/50 px-3 py-2.5 flex items-start justify-between gap-3 transition-all duration-150 ${blocked ? "opacity-50" : "hover:border-emerald-500/70 hover:shadow-lg hover:shadow-emerald-500/10"}`}>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           {unit.type === "General" && <Crown size={14} className="text-amber-400 shrink-0" />}
