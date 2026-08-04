@@ -57,8 +57,8 @@ const MOCK_DATA = {
       ],
       unitCountValidation: [
         {
-          left: ["welsh_skirmishers"],
-          right: ["welsh_teulu_foot"],
+          ids: ["welsh_skirmishers"],
+          compareWith: ["welsh_teulu_foot"],
           expression: "lessThanOrEqual",
           ratio: 1,
         },
@@ -1402,17 +1402,17 @@ function App() {
        against a ratio of the total unit count of the right ids --- */
     const asArr = (v) => (Array.isArray(v) ? v : v ? [v] : []);
     (army.unitCountValidation || []).forEach((rule) => {
-      if (!rule || !rule.expression) return;
-      const leftIds = asArr(rule.left ?? rule.leftUnitIds ?? rule.leftIds);
-      const rightIds = asArr(rule.right ?? rule.rightUnitIds ?? rule.rightIds);
+      if (!rule) return;
+      const leftIds = asArr(rule.ids ?? rule.left ?? rule.leftUnitIds ?? rule.leftIds);
+      const rightIds = asArr(rule.compareWith ?? rule.right ?? rule.rightUnitIds ?? rule.rightIds);
       if (leftIds.length === 0 && rightIds.length === 0) return;
       const ratio = rule.ratio != null ? rule.ratio : 1;
       const leftCount = leftIds.reduce((s, id) => s + (counts[id] || 0), 0);
       const rightCount = rightIds.reduce((s, id) => s + (counts[id] || 0), 0);
       if (leftCount === 0 && rightCount === 0) return;
       const threshold = rightCount * ratio;
-      const expr = EXPR[rule.expression];
-      if (expr && !expr.test(leftCount, threshold)) {
+      const expr = EXPR[rule.expression] || EXPR.lessThanOrEqual;
+      if (!expr.test(leftCount, threshold)) {
         w.push({
           level: "warning",
           msg: `Unit count for ${leftIds.map((id) => nameOf(id)).join(" + ")} (${leftCount}) must be ${expr.label} ${ratio}× the count of ${rightIds
