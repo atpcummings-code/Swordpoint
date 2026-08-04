@@ -1014,6 +1014,22 @@ function App() {
     return blocked;
   }, [army, rosterCounts]);
 
+  /* Category ids that have reached their "pointsRatio" max unit count — used to
+     hard-block the +Add button for every unit in that category. */
+  const catFullIds = useMemo(() => {
+    const full = new Set();
+    const counts = {};
+    roster.forEach((i) => {
+      counts[i.categoryId] = (counts[i.categoryId] || 0) + 1;
+    });
+    (army?.categories || []).forEach((cat) => {
+      if (cat.constraintType === "pointsRatio") {
+        if ((counts[cat.id] || 0) >= pointsRatioMax(cat, maxPoints)) full.add(cat.id);
+      }
+    });
+    return full;
+  }, [army, roster, maxPoints]);
+
   /* "enabledEvery": an option is only unlocked on every nth unit of a type
      (positions n, 2n, 3n...). Returns instanceId -> Set of LOCKED option names. */
   const enabledEveryLocks = useMemo(() => {
@@ -1522,6 +1538,7 @@ function App() {
                 onAdd={addUnit}
                 blockedAddIds={blockedAddIds}
                 maxPoints={maxPoints}
+                catFull={catFullIds.has(cat.id)}
               />
             ))}
           </div>
@@ -1711,7 +1728,7 @@ function ValidationPanel({ warnings, isValid, empty }) {
   );
 }
 
-function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies, onToggleAlly, onAdd, blockedAddIds, maxPoints }) {
+function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies, onToggleAlly, onAdd, blockedAddIds, maxPoints, catFull }) {
   const homeUnits = (army?.units || []).filter((u) => u.category === cat.id);
   const isAllies = Array.isArray(cat.alliedArmyKeys);
 
@@ -1742,7 +1759,7 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
       <div className="p-3 space-y-2">
         {/* Home army units */}
         {homeUnits.map((u) => (
-          <CatalogUnit key={u.id} unit={u} onAddUnit={onAdd} armyKey={homeKey} blocked={blockedAddIds?.has(u.id)} />
+          <CatalogUnit key={u.id} unit={u} onAddUnit={onAdd} armyKey={homeKey} blocked={blockedAddIds?.has(u.id) || catFull} />
         ))}
 
         {/* Allied selection */}
@@ -1788,7 +1805,7 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
                   {(armies[ak].units || [])
                     .filter((u) => u.type !== "General")
                     .map((u) => (
-                      <CatalogUnit key={ak + u.id} unit={u} onAddUnit={onAdd} armyKey={ak} categoryOverride={cat.id} blocked={blockedAddIds?.has(u.id)} />
+                      <CatalogUnit key={ak + u.id} unit={u} onAddUnit={onAdd} armyKey={ak} categoryOverride={cat.id} blocked={blockedAddIds?.has(u.id) || catFull} />
                     ))}
                 </div>
               ))}
