@@ -1633,7 +1633,7 @@ function App() {
         {/* ====== LEFT: Army Composition ====== */}
         <section data-testid="catalog-panel" className="min-w-0 pr-3" style={{ height: "100%", overflowY: "auto", scrollbarGutter: "stable" }}>
           <div className="sticky top-0 z-20 bg-[#020617] py-2 mb-4">
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900/70 border border-slate-800">
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-800">
               <Users size={18} className="text-slate-400" />
               <h2 className="font-display text-lg font-bold tracking-wide text-slate-200">
                 {army?.armyName || "Army Composition"}
@@ -1668,7 +1668,7 @@ function App() {
         <section data-testid="roster-panel" className="min-w-0 pr-3" style={{ height: "100%", overflowY: "auto", scrollbarGutter: "stable" }}>
           {/* Column header — sticky; opaque bg extends to meet the summary box */}
           <div className="sticky top-0 z-30 bg-[#020617] pt-2 pb-4">
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-900/70 border border-slate-800">
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-800">
               <Flag size={18} className="text-slate-400" />
               <h2 className="font-display text-lg font-bold tracking-wide text-slate-100">
                 Active Army Roster
