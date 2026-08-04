@@ -59,7 +59,7 @@ const MOCK_DATA = {
         { id: "commanders", name: "Commanders", constraintType: "count", min: 1, max: 8 },
         { id: "teulu", name: "Teulu", constraintType: "percentage", min: 0, max: 33 },
         { id: "tenants", name: "Tenants", constraintType: "percentage", min: 0, max: 80 },
-        { id: "skirmishers", name: "Skirmishers", constraintType: "percentage", min: 0, max: 10 },
+        { id: "skirmishers", name: "Skirmishers", constraintType: "pointsRatio", pointsThreshold: 250, countPerThreshold: 1, rounding: "down" },
         {
           id: "allies",
           name: "Allied Contingents",
@@ -663,6 +663,17 @@ function stripJsonc(text) {
   return out.replace(/,(\s*[}\]])/g, "$1");
 }
 
+/* "pointsRatio": max units in a category = (maxPoints / pointsThreshold) *
+   countPerThreshold, rounded per the "rounding" field. Never below 1. */
+function pointsRatioMax(cat, maxPoints) {
+  const threshold = cat.pointsThreshold || 1;
+  const per = cat.countPerThreshold ?? 1;
+  const raw = (maxPoints / threshold) * per;
+  const n = cat.rounding === "up" ? Math.ceil(raw) : Math.floor(raw);
+  return Math.max(1, n);
+}
+
+
 function makeInstance(unit, sourceArmyKey, categoryOverride) {
   return {
     instanceId: uid(),
@@ -1193,6 +1204,19 @@ function App() {
               maxPts
             )} pts) exceeded — currently ${pts} pts.`,
           });
+      } else if (cat.constraintType === "pointsRatio") {
+        const n = inCat.length;
+        const max = pointsRatioMax(cat, maxPoints);
+        if (cat.min != null && n < cat.min)
+          w.push({
+            level: "warning",
+            msg: `${cat.name}: requires at least ${cat.min} unit choice(s) — currently ${n}.`,
+          });
+        if (n > max)
+          w.push({
+            level: "warning",
+            msg: `${cat.name}: allows at most ${max} unit choice(s) at ${maxPoints} pts — currently ${n}.`,
+          });
       }
     });
 
@@ -1497,6 +1521,7 @@ function App() {
                 onToggleAlly={toggleAlly}
                 onAdd={addUnit}
                 blockedAddIds={blockedAddIds}
+                maxPoints={maxPoints}
               />
             ))}
           </div>
@@ -1686,7 +1711,7 @@ function ValidationPanel({ warnings, isValid, empty }) {
   );
 }
 
-function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies, onToggleAlly, onAdd, blockedAddIds }) {
+function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies, onToggleAlly, onAdd, blockedAddIds, maxPoints }) {
   const homeUnits = (army?.units || []).filter((u) => u.category === cat.id);
   const isAllies = Array.isArray(cat.alliedArmyKeys);
 
@@ -1699,6 +1724,8 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
         <span className="font-cond text-[11px] uppercase tracking-widest text-slate-500">
           {cat.constraintType === "percentage"
             ? `${cat.min}–${cat.max}%`
+            : cat.constraintType === "pointsRatio"
+            ? `max ${pointsRatioMax(cat, maxPoints)} choices`
             : `${cat.min}–${cat.max} choices`}
         </span>
       </div>
@@ -2149,6 +2176,8 @@ function ConstraintsTable({ categories, maxPoints }) {
                 ? `${cat.min}–${cat.max}% (${Math.round(((cat.min ?? 0) / 100) * maxPoints)}–${Math.round(
                     ((cat.max ?? 100) / 100) * maxPoints
                   )} pts)`
+                : cat.constraintType === "pointsRatio"
+                ? `max ${pointsRatioMax(cat, maxPoints)} choices (${cat.countPerThreshold ?? 1} per ${cat.pointsThreshold} pts)`
                 : `${cat.min}–${cat.max} choices`;
             return (
               <tr key={cat.id} className="border-b border-slate-800/60 last:border-0">
