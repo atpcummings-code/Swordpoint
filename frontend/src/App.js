@@ -2250,7 +2250,7 @@ function ConstraintsTable({ categories, maxPoints }) {
       </div>
       <table className="w-full text-left font-cond text-sm">
         <thead>
-          <tr className="text-slate-500 text-[11px] uppercase tracking-widest border-b border-slate-800">
+          <tr className="text-slate-500 text-base font-body uppercase tracking-widest border-b border-slate-800">
             <th className="px-4 py-2 font-semibold">Category</th>
             <th className="px-4 py-2 font-semibold">Type</th>
             <th className="px-4 py-2 font-semibold text-right">Limit</th>
