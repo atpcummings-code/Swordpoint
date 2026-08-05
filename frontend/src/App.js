@@ -1895,7 +1895,7 @@ function CatalogUnit({ unit, onAddUnit, armyKey, categoryOverride, blocked }) {
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           {unit.type === "General" && <Crown size={14} className="text-amber-400 shrink-0" />}
-          <span className="font-cond font-semibold text-slate-100 truncate">{unit.name}</span>
+          <span className="font-body font-semibold text-slate-100 truncate">{unit.name}</span>
         </div>
         <p className="font-body text-xs text-slate-300 mt-0.5 line-clamp-2">{unit.description}</p>
         <div className="flex flex-wrap gap-2 mt-1.5 font-cond text-[11px] text-slate-400">
