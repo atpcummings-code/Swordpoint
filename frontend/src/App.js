@@ -1804,7 +1804,7 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
       <div className="px-4 py-2.5 bg-slate-900/70 border-b border-slate-800 flex items-center justify-between">
-        <h3 className="font-display font-bold tracking-wide text-slate-200" style={{ fontSize: "1.5rem" }}>
+        <h3 className="font-display font-bold tracking-wide text-slate-200" style={{ fontSize: "1.25rem" }}>
           {cat.name}
         </h3>
         <span className="font-cond text-[11px] uppercase tracking-widest text-slate-500">
@@ -2244,7 +2244,7 @@ function ConstraintsTable({ categories, maxPoints }) {
   return (
     <div data-testid="constraints-table" className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
       <div className="px-4 py-2.5 bg-slate-900/70 border-b border-slate-800">
-        <h3 className="font-display font-bold tracking-wide text-slate-200 uppercase" style={{ fontSize: "1.5rem" }}>
+        <h3 className="font-display font-bold tracking-wide text-slate-200 uppercase" style={{ fontSize: "1.25rem" }}>
           Army Composition
         </h3>
       </div>
