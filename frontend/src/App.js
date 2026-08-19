@@ -206,6 +206,8 @@ const MOCK_DATA = {
               attacks: 2,
               defence: 6,
               cohesion: 7,
+              minBases: 2,
+              maxBases: 10,
               baseEquipment: ["Spear", "Shield"],
               specialRules: ["Superior Fighters", "Warband"],
             },
@@ -214,6 +216,9 @@ const MOCK_DATA = {
               attacks: 3,
               defence: 6,
               cohesion: 8,
+              minBases: 1,
+              maxBases: 2,
+              maxPercentage: 34,
               baseEquipment: ["Spear", "Shield"],
               specialRules: ["Superior Fighters", "Hero"],
             },
@@ -789,6 +794,9 @@ function effectiveCatMax(cat, maxPoints) {
 
 
 function makeInstance(unit, sourceArmyKey, categoryOverride) {
+  const subs = Array.isArray(unit.subProfiles) ? unit.subProfiles.map(readSubProfile) : [];
+  // A unit is in "sub-unit bases" mode when any sub-profile defines its own min/max bases.
+  const hasSubBases = subs.some((s) => s.minBases != null || s.maxBases != null);
   return {
     instanceId: uid(),
     unitId: unit.id,
@@ -807,7 +815,8 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     specialRules: Array.isArray(unit.specialRules) ? [...unit.specialRules] : [],
     baseEquipment: Array.isArray(unit.baseEquipment) ? [...unit.baseEquipment] : [],
     optionalEquipment: Array.isArray(unit.optionalEquipment) ? unit.optionalEquipment.map(readOption) : [],
-    subProfiles: Array.isArray(unit.subProfiles) ? unit.subProfiles.map(readSubProfile) : [],
+    subProfiles: subs,
+    subBases: hasSubBases ? subs.map((s) => (s.minBases != null ? s.minBases : 1)) : null,
     equipped: [],
     allowedSecondaryUnits: Array.isArray(unit.allowedSecondaryUnits) ? unit.allowedSecondaryUnits : [],
     secondaryUnitId: null,
@@ -855,6 +864,9 @@ function readSubProfile(sp) {
   return {
     name: sp.name || sp.profileName || "Profile",
     pointsPerBase: pickStat(sp, ["pointsPerBase", "ppb", "points", "pts"]),
+    minBases: pickStat(sp, ["minBases", "minBase"]),
+    maxBases: pickStat(sp, ["maxBases", "maxBase"]),
+    maxPercentage: pickStat(sp, ["maxPercentage", "maxPct", "maxPercent"]),
     attacks: pickStat(src, ["attacks", "A", "a"]),
     defence: pickStat(src, ["defence", "defense", "D", "d"]),
     cohesion: pickStat(src, ["cohesion", "C", "c", "Coh", "coh", "combat"]),
@@ -928,10 +940,14 @@ function computeUnit(inst) {
 
   const isSkirm = rules.some(isSkirmRule);
 
+  const hasSubBases =
+    Array.isArray(inst.subBases) &&
+    (inst.subProfiles || []).some((s) => s.minBases != null || s.maxBases != null);
+
   /* Per-sub-profile rows. Untargeted (general) active options apply to every
      profile; options with a matching targetProfile apply only to that row.
      Points from every active option are still summed into the unit total. */
-  const profiles = (inst.subProfiles || []).map((sp) => {
+  const profiles = (inst.subProfiles || []).map((sp, idx) => {
     const applies = active.filter((e) => !e.targetProfile || e.targetProfile === sp.name);
     const sum = (key) => applies.reduce((s, e) => s + (e[key] || 0), 0);
     const attacks = sp.attacks != null ? sp.attacks + sum("attacksModifier") : null;
@@ -942,7 +958,9 @@ function computeUnit(inst) {
     const ownPts = sp.pointsPerBase != null;
     const ptsOptions = sum("pointsModifier");
     const totalPer = ptsBase + ptsOptions;
-    const ptsUnit = totalPer * inst.bases;
+    // in sub-unit mode each profile has its own base count; otherwise it shares the unit's
+    const pBases = hasSubBases ? (inst.subBases[idx] ?? (sp.minBases ?? 1)) : inst.bases;
+    const ptsUnit = totalPer * pBases;
     let pRules = [...sp.specialRules];
     let pEquip = [...sp.baseEquipment];
     applies.forEach((e) => {
@@ -951,7 +969,23 @@ function computeUnit(inst) {
       (e.equipmentRemoved || []).forEach((x) => (pEquip = pEquip.filter((i) => i !== x)));
       (e.equipmentAdded || []).forEach((x) => !pEquip.includes(x) && pEquip.push(x));
     });
-    return { name: sp.name, attacks, defence, cohesion, ptsBase, ownPts, ptsOptions, total: totalPer, ptsUnit, rules: pRules, equipment: pEquip };
+    return {
+      name: sp.name,
+      attacks,
+      defence,
+      cohesion,
+      ptsBase,
+      ownPts,
+      ptsOptions,
+      total: totalPer,
+      bases: pBases,
+      minBases: sp.minBases,
+      maxBases: sp.maxBases,
+      maxPercentage: sp.maxPercentage,
+      ptsUnit,
+      rules: pRules,
+      equipment: pEquip,
+    };
   });
   const skirmFromProfiles = profiles.some((p) => p.rules.some(isSkirmRule));
   const isSkirmAll = isSkirm || skirmFromProfiles;
@@ -988,8 +1022,17 @@ function computeUnit(inst) {
   }
   const ppbTotal = ppbBase + ppbOptions;
 
-  const total = ppbTotal * inst.bases + (secondary ? secondary.points : 0);
-  return { ppb, ppbBase, ppbOptions, ppbTotal, defence, cohesion, rules, equipment, isSkirm: isSkirmAll, effMax, effMin, total, active, secondary, profiles };
+  // In sub-unit mode the unit's base count and range are the sum across sub-units,
+  // and the total is the sum of each sub-unit's own points.
+  const mainBases = hasSubBases ? profiles.reduce((s, p) => s + p.bases, 0) : inst.bases;
+  const subDispMin = hasSubBases ? profiles.reduce((s, p) => s + (p.minBases ?? 0), 0) : effMin;
+  const subDispMax = hasSubBases ? profiles.reduce((s, p) => s + (p.maxBases ?? p.bases), 0) : effMax;
+
+  const total =
+    (hasSubBases
+      ? profiles.reduce((s, p) => s + p.ptsUnit, 0)
+      : ppbTotal * inst.bases) + (secondary ? secondary.points : 0);
+  return { ppb, ppbBase, ppbOptions, ppbTotal, defence, cohesion, rules, equipment, isSkirm: isSkirmAll, effMax, effMin, hasSubBases, mainBases, subDispMin, subDispMax, total, active, secondary, profiles };
 }
 
 /* ------------------------------------------------------------------ */
@@ -1165,6 +1208,31 @@ function App() {
       const lo = Math.max(effMin || 1, 1);
       const next = Math.min(Math.max(i.bases + delta, lo), effMax);
       return { ...i, bases: next };
+    });
+  };
+
+  /* Adjust bases for a single sub-unit, clamped to its own min/max and its
+     optional maxPercentage of the unit's total bases. */
+  const changeSubBases = (instanceId, idx, delta) => {
+    updateInst(instanceId, (i) => {
+      const subs = i.subProfiles || [];
+      const sp = subs[idx];
+      if (!sp) return i;
+      const arr = Array.isArray(i.subBases)
+        ? [...i.subBases]
+        : subs.map((s) => (s.minBases != null ? s.minBases : 1));
+      const cur = arr[idx] ?? (sp.minBases != null ? sp.minBases : 1);
+      const lo = sp.minBases ?? 0;
+      const hi = sp.maxBases ?? 999;
+      let next = Math.min(Math.max(cur + delta, lo), hi);
+      if (delta > 0 && sp.maxPercentage != null) {
+        const totalAfter = arr.reduce((s, v, j) => s + (j === idx ? next : v), 0);
+        if (totalAfter > 0 && (next / totalAfter) * 100 > sp.maxPercentage) {
+          next = cur; // would breach the percentage cap — reject
+        }
+      }
+      arr[idx] = next;
+      return { ...i, subBases: arr };
     });
   };
 
@@ -2257,6 +2325,7 @@ function App() {
                   excludeConflict={excludeConflicts[inst.unitId]}
                   enabledEveryLocked={equipLocks[inst.instanceId]}
                   onChangeBases={changeBases}
+                  onChangeSubBases={changeSubBases}
                   onToggleEquip={toggleEquipment}
                   onDuplicate={duplicateUnit}
                   onMove={moveUnit}
@@ -2525,6 +2594,7 @@ function RosterRow({
   excludeConflict,
   enabledEveryLocked,
   onChangeBases,
+  onChangeSubBases,
   onToggleEquip,
   onDuplicate,
   onMove,
@@ -2629,32 +2699,45 @@ function RosterRow({
 
       {/* stats + bases */}
       <div className="mt-3 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
-          <button
-            data-testid={`bases-minus-${inst.instanceId}`}
-            disabled={atMin}
-            onClick={() => onChangeBases(inst.instanceId, -1)}
-            className="w-8 h-8 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
-          >
-            <Minus size={15} />
-          </button>
-          <div className="text-center min-w-[64px]">
-            <div data-testid={`bases-count-${inst.instanceId}`} className="font-display text-xl font-bold text-slate-100 leading-none">
-              {inst.bases}
-            </div>
-            <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
-              bases ({calc.effMin}–{calc.effMax})
+        {calc.hasSubBases ? (
+          <div className="flex items-center gap-2" data-testid={`bases-readonly-${inst.instanceId}`}>
+            <div className="text-center min-w-[64px]">
+              <div data-testid={`bases-count-${inst.instanceId}`} className="font-display text-xl font-bold text-slate-100 leading-none">
+                {calc.mainBases}
+              </div>
+              <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
+                bases ({calc.subDispMin}–{calc.subDispMax})
+              </div>
             </div>
           </div>
-          <button
-            data-testid={`bases-plus-${inst.instanceId}`}
-            disabled={atMax}
-            onClick={() => onChangeBases(inst.instanceId, 1)}
-            className="w-8 h-8 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
-          >
-            <Plus size={15} />
-          </button>
-        </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              data-testid={`bases-minus-${inst.instanceId}`}
+              disabled={atMin}
+              onClick={() => onChangeBases(inst.instanceId, -1)}
+              className="w-8 h-8 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
+            >
+              <Minus size={15} />
+            </button>
+            <div className="text-center min-w-[64px]">
+              <div data-testid={`bases-count-${inst.instanceId}`} className="font-display text-xl font-bold text-slate-100 leading-none">
+                {inst.bases}
+              </div>
+              <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
+                bases ({calc.effMin}–{calc.effMax})
+              </div>
+            </div>
+            <button
+              data-testid={`bases-plus-${inst.instanceId}`}
+              disabled={atMax}
+              onClick={() => onChangeBases(inst.instanceId, 1)}
+              className="w-8 h-8 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
+            >
+              <Plus size={15} />
+            </button>
+          </div>
+        )}
 
         {/* unified stat columns — same fixed-width grid used by sub-profile rows
             so every column vertically aligns with the header. */}
@@ -2689,15 +2772,60 @@ function RosterRow({
       {/* sub-profile rows — each profile renders as a distinct row */}
       {calc.profiles?.length > 0 && (
         <div className="mt-3 pt-3 border-t border-slate-800 space-y-2" data-testid={`unit-subprofiles-${inst.instanceId}`}>
-          {calc.profiles.map((p) => (
+          {calc.profiles.map((p, idx) => {
+            const subTotal = calc.mainBases;
+            const pctBlocked =
+              p.maxPercentage != null &&
+              subTotal + 1 > 0 &&
+              ((p.bases + 1) / (subTotal + 1)) * 100 > p.maxPercentage;
+            const subAtMin = p.bases <= (p.minBases ?? 0);
+            const subAtMax = p.bases >= (p.maxBases ?? Infinity) || pctBlocked;
+            return (
             <div
               key={p.name}
               data-testid={`subprofile-${inst.instanceId}-${p.name}`}
               className="rounded-lg border-l-2 border-slate-700 bg-slate-900/40 py-2 pl-3"
             >
-              <div className="flex items-center justify-between gap-3">
+              {/* title on its own row, above the stats */}
+              <div className="flex items-center gap-2 mb-1.5">
                 <span className="font-body font-semibold text-slate-100">{p.name}</span>
-                <div className="flex items-center gap-2 font-cond text-sm ml-auto">
+                {p.maxPercentage != null && (
+                  <span className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
+                    max {p.maxPercentage}%
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 font-cond text-sm">
+                {calc.hasSubBases && (
+                  <div className="flex items-center gap-1" data-testid={`subprofile-bases-${inst.instanceId}-${p.name}`}>
+                    <button
+                      data-testid={`sub-bases-minus-${inst.instanceId}-${p.name}`}
+                      disabled={subAtMin}
+                      onClick={() => onChangeSubBases(inst.instanceId, idx, -1)}
+                      className="w-7 h-7 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
+                    >
+                      <Minus size={13} />
+                    </button>
+                    <div className="text-center w-[52px]">
+                      <div data-testid={`sub-bases-count-${inst.instanceId}-${p.name}`} className="font-display text-base font-bold text-slate-100 leading-none">
+                        {p.bases}
+                      </div>
+                      <div className="font-cond text-[9px] uppercase tracking-widest text-slate-500">
+                        bases {p.minBases ?? 0}–{p.maxBases ?? "∞"}
+                      </div>
+                    </div>
+                    <button
+                      data-testid={`sub-bases-plus-${inst.instanceId}-${p.name}`}
+                      disabled={subAtMax}
+                      title={pctBlocked ? `Cannot exceed ${p.maxPercentage}% of total bases` : undefined}
+                      onClick={() => onChangeSubBases(inst.instanceId, idx, 1)}
+                      className="w-7 h-7 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
+                    >
+                      <Plus size={13} />
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 ml-auto">
                   <Stat label="Pts/Base" value={p.ptsBase} w sm testid={`subprofile-pts-base-${inst.instanceId}-${p.name}`} />
                   <Stat label="Pts/Options" value={p.ptsOptions} w sm testid={`subprofile-pts-options-${inst.instanceId}-${p.name}`} />
                   <Stat label="Total" value={p.total} w sm testid={`subprofile-pts-total-${inst.instanceId}-${p.name}`} />
@@ -2735,7 +2863,8 @@ function RosterRow({
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -3055,7 +3184,7 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
                 <tr style={{ verticalAlign: "top" }}>
                   <td style={{ padding: "4px 4px 1px", fontWeight: 600 }}>{inst.name}</td>
                   <td style={{ padding: "4px 4px 1px" }}>{inst.categoryId}</td>
-                  <td style={{ padding: "4px 4px 1px" }}>{inst.bases}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{calc.mainBases}</td>
                   <td style={{ padding: "4px 4px 1px" }}>{hasProfiles ? "-" : isCommander ? inst.attacks ?? "-" : "-"}</td>
                   <td style={{ padding: "4px 4px 1px" }}>{hasProfiles ? "-" : calc.defence ?? "-"}</td>
                   <td style={{ padding: "4px 4px 1px" }}>{hasProfiles ? "-" : calc.cohesion ?? "-"}</td>
@@ -3078,6 +3207,7 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
                           p.attacks != null ? `A ${p.attacks}` : null,
                           p.defence != null ? `D ${p.defence}` : null,
                           p.cohesion != null ? `C ${p.cohesion}` : null,
+                          calc.hasSubBases ? `Bases ${p.bases}` : null,
                           `Pts/Base ${p.ptsBase}`,
                           `Pts/Options ${p.ptsOptions}`,
                           `Total ${p.total}`,

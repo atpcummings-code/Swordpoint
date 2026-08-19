@@ -97,6 +97,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Disabled catalog units now show a small amber hint (with warning icon) beneath the description explaining the unmet `requires`: fixed → "Needs N× Name in the roster first (have H)"; ratio → "Needs N× Name for each <Unit> (have H)". Also set as a hover `title` tooltip on the card. Computed in a `requireHints` memo and threaded through `CatalogCategory`; disappears the instant the requirement is satisfied.
 - Verified live: Teulu Cavalry shows "Needs 1× Over King …" and clears after an Over King is added; Skirmishers shows "Needs 2× Teulu (Foot or Cavalry) …".
 
+## Implemented (2026-06 session, sub-unit base counts)
+- Sub-profiles can now define `minBases`/`maxBases` (and optional `maxPercentage`), turning a unit into "sub-unit bases" mode. In this mode: the main unit row drops its −/+ (display-only base count = sum of sub-unit bases, with a "Bases X–Y" range = sum of sub mins–maxes); each sub-unit gets its own −/+ on its stats row (title moved to its own row above), clamped to its own min/max; the unit's Pts/Unit is the sum of each sub-unit's (per-base total × its bases). `computeUnit` returns `hasSubBases/mainBases/subDispMin/subDispMax` and per-profile `bases`. New `changeSubBases` handler enforces min/max + the percentage cap (disables + when adding would breach). `subBases` persists via Save/Load. Fallback: sub-profile units without min/max keep the main −/+ unchanged (title still moves to its own row).
+- Demo seeded on Welsh Teulu Foot: Warriors 2–10, Champion 1–2 (maxPercentage 34) → main "Bases 3–12".
+- Verified live: main shows summed bases + range (no −/+); Warriors/Champion −/+ respect min/max; Champion + blocked at 34% cap until Warriors grow, then blocked again at its maxBases 2; per-sub-unit and unit totals recompute correctly.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
