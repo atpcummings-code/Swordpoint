@@ -2752,14 +2752,14 @@ function RosterRow({
         {/* unified stat columns — same fixed-width grid used by sub-profile rows
             so every column vertically aligns with the header. */}
         <div className="flex items-center gap-2 font-cond text-sm ml-auto">
-          <Stat label="Pts/Base" value={calc.ppbBase} w testid={`unit-pts-base-${inst.instanceId}`} />
+          <Stat label="Pts/Base" value={calc.hasSubBases ? "–" : calc.ppbBase} w testid={`unit-pts-base-${inst.instanceId}`} />
           <Stat
             label="Pts/Options"
-            value={calc.ppbOptions}
+            value={calc.hasSubBases ? "–" : calc.ppbOptions}
             w
             testid={`unit-pts-options-${inst.instanceId}`}
           />
-          <Stat label="Total" value={calc.ppbTotal} w testid={`unit-pts-total-${inst.instanceId}`} />
+          <Stat label="Total" value={calc.hasSubBases ? "–" : calc.ppbTotal} w testid={`unit-pts-total-${inst.instanceId}`} />
           {calc.profiles?.length ? (
             <>
               <Stat label={isCommanderCat(inst.categoryId) || inst.type === "General" ? "A" : "D"} value={"\u00A0"} w testid={`unit-defence-${inst.instanceId}`} />
@@ -3200,9 +3200,9 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
                   <td style={{ padding: "4px 4px 1px" }}>{hasProfiles ? "-" : isCommander ? inst.attacks ?? "-" : "-"}</td>
                   <td style={{ padding: "4px 4px 1px" }}>{hasProfiles ? "-" : calc.defence ?? "-"}</td>
                   <td style={{ padding: "4px 4px 1px" }}>{hasProfiles ? "-" : calc.cohesion ?? "-"}</td>
-                  <td style={{ padding: "4px 4px 1px" }}>{calc.ppbBase}</td>
-                  <td style={{ padding: "4px 4px 1px" }}>{calc.ppbOptions}</td>
-                  <td style={{ padding: "4px 4px 1px" }}>{calc.ppbTotal}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{calc.hasSubBases ? "–" : calc.ppbBase}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{calc.hasSubBases ? "–" : calc.ppbOptions}</td>
+                  <td style={{ padding: "4px 4px 1px" }}>{calc.hasSubBases ? "–" : calc.ppbTotal}</td>
                   <td style={{ padding: "4px 4px 1px", textAlign: "right", fontWeight: 600 }}>{calc.total}</td>
                 </tr>
                 <tr>

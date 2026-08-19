@@ -106,6 +106,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - The main unit's `minBases`/`maxBases` now clamp the SUM of all sub-unit bases (in addition to each sub-unit's own min/max and any maxPercentage). `makeInstance` stores `combinedMin`/`combinedMax` (unit min/max if defined, else the sum of sub-unit limits); `computeUnit` exposes them via `subDispMin`/`subDispMax` and the "Bases X–Y" display. A sub-unit's + is disabled when the combined total would exceed `combinedMax`; its − is disabled when the combined total would drop below `combinedMin`. `changeSubBases` enforces the same. All constraints apply simultaneously.
 - Verified live (Welsh Teulu Foot: unit 3–8, Warriors 2–10, Champion 1–2 @34%): + halts at combined 8 even with individual room left; − halts at combined 3; per-sub min/max/% still respected.
 
+## Implemented (2026-06 session, dash out main pts for sub-unit units)
+- When any sub-unit defines min/max bases (`hasSubBases`), the main unit row's PTS/BASE, PTS/OPTIONS and TOTAL now render "–" instead of computed values (PTS/UNIT still shows the cumulative sum); sub-unit rows keep their own calculated values. Units without sub-unit min/max are unchanged. Applied to both the roster UI and the PDF export.
+- Verified live: Teulu Foot shows –/–/– with PTS/UNIT 45; Over King & Teulu Cavalry compute normally.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
