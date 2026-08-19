@@ -206,7 +206,7 @@ const MOCK_DATA = {
               attacks: 2,
               defence: 6,
               cohesion: 7,
-              minBases: 2,
+              minBases: 3,
               maxBases: 10,
               baseEquipment: ["Spear", "Shield"],
               specialRules: ["Superior Fighters", "Warband"],
@@ -216,9 +216,16 @@ const MOCK_DATA = {
               attacks: 3,
               defence: 6,
               cohesion: 8,
-              minBases: 1,
+              minBases: 0,
               maxBases: 2,
               maxPercentage: 34,
+              onBaseAdded: {
+                trigger: "oneOrMore",
+                apply: [
+                  { type: "specialRule", name: "Warlord", target: "all" },
+                  { type: "equipment", name: "Banner", target: "self" },
+                ],
+              },
               baseEquipment: ["Spear", "Shield"],
               specialRules: ["Superior Fighters", "Hero"],
             },
@@ -868,6 +875,8 @@ function readSubProfile(sp) {
   const src = sp.stats && typeof sp.stats === "object" ? { ...sp, ...sp.stats } : sp;
   return {
     name: sp.name || sp.profileName || "Profile",
+    id: sp.id ?? null,
+    onBaseAdded: sp.onBaseAdded || null,
     pointsPerBase: pickStat(sp, ["pointsPerBase", "ppb", "points", "pts"]),
     minBases: pickStat(sp, ["minBases", "minBase"]),
     maxBases: pickStat(sp, ["maxBases", "maxBase"]),
@@ -976,6 +985,8 @@ function computeUnit(inst) {
     });
     return {
       name: sp.name,
+      id: sp.id,
+      onBaseAdded: sp.onBaseAdded,
       attacks,
       defence,
       cohesion,
@@ -991,6 +1002,31 @@ function computeUnit(inst) {
       rules: pRules,
       equipment: pEquip,
     };
+  });
+
+  /* onBaseAdded: when a sub-unit has >= 1 base, add its configured rules/equipment
+     to the target sub-unit(s). Recomputed each render, so dropping to 0 bases
+     automatically removes them. target: "self" | "all" | <sub-unit name or id>. */
+  profiles.forEach((p) => {
+    const ob = p.onBaseAdded;
+    if (!ob || (p.bases || 0) < 1) return;
+    if ((ob.trigger || "oneOrMore") !== "oneOrMore") return;
+    (ob.apply || []).forEach((item) => {
+      if (!item || !item.name) return;
+      const targets =
+        item.target === "all"
+          ? profiles
+          : item.target == null || item.target === "self"
+          ? [p]
+          : profiles.filter((q) => q.name === item.target || q.id === item.target);
+      targets.forEach((t) => {
+        if (item.type === "equipment") {
+          if (!t.equipment.includes(item.name)) t.equipment.push(item.name);
+        } else {
+          if (!t.rules.includes(item.name)) t.rules.push(item.name);
+        }
+      });
+    });
   });
   const skirmFromProfiles = profiles.some((p) => p.rules.some(isSkirmRule));
   const isSkirmAll = isSkirm || skirmFromProfiles;

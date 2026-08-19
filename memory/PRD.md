@@ -110,6 +110,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - When any sub-unit defines min/max bases (`hasSubBases`), the main unit row's PTS/BASE, PTS/OPTIONS and TOTAL now render "–" instead of computed values (PTS/UNIT still shows the cumulative sum); sub-unit rows keep their own calculated values. Units without sub-unit min/max are unchanged. Applied to both the roster UI and the PDF export.
 - Verified live: Teulu Foot shows –/–/– with PTS/UNIT 45; Over King & Teulu Cavalry compute normally.
 
+## Implemented (2026-06 session, onBaseAdded sub-unit trigger)
+- New sub-profile field `onBaseAdded: { trigger:"oneOrMore", apply:[{ type:"specialRule"|"equipment", name, target:"self"|"all"|<subunit name/id> }] }`. When a sub-unit's base count is ≥ 1 the listed rules/equipment are added to the targeted sub-unit(s); computed as a derived pass in `computeUnit`, so dropping to 0 bases automatically removes them. Captured via `readSubProfile`.
+- Demo seeded on Welsh Teulu Foot / Champion (min 0): +1 base adds "Warlord" to all sub-units and "Banner" to Champion; back to 0 removes both. Verified live.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
