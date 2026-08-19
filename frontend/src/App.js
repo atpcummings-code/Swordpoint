@@ -797,6 +797,8 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
   const subs = Array.isArray(unit.subProfiles) ? unit.subProfiles.map(readSubProfile) : [];
   // A unit is in "sub-unit bases" mode when any sub-profile defines its own min/max bases.
   const hasSubBases = subs.some((s) => s.minBases != null || s.maxBases != null);
+  const sumSubMin = subs.reduce((s, x) => s + (x.minBases ?? 0), 0);
+  const sumSubMax = subs.reduce((s, x) => s + (x.maxBases ?? 0), 0);
   return {
     instanceId: uid(),
     unitId: unit.id,
@@ -817,6 +819,9 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     optionalEquipment: Array.isArray(unit.optionalEquipment) ? unit.optionalEquipment.map(readOption) : [],
     subProfiles: subs,
     subBases: hasSubBases ? subs.map((s) => (s.minBases != null ? s.minBases : 1)) : null,
+    // combined-total clamp: main unit min/max if defined, else the sum of sub-unit limits
+    combinedMin: hasSubBases ? (unit.minBases != null ? unit.minBases : sumSubMin) : null,
+    combinedMax: hasSubBases ? (unit.maxBases != null ? unit.maxBases : sumSubMax) : null,
     equipped: [],
     allowedSecondaryUnits: Array.isArray(unit.allowedSecondaryUnits) ? unit.allowedSecondaryUnits : [],
     secondaryUnitId: null,
@@ -1025,8 +1030,8 @@ function computeUnit(inst) {
   // In sub-unit mode the unit's base count and range are the sum across sub-units,
   // and the total is the sum of each sub-unit's own points.
   const mainBases = hasSubBases ? profiles.reduce((s, p) => s + p.bases, 0) : inst.bases;
-  const subDispMin = hasSubBases ? profiles.reduce((s, p) => s + (p.minBases ?? 0), 0) : effMin;
-  const subDispMax = hasSubBases ? profiles.reduce((s, p) => s + (p.maxBases ?? p.bases), 0) : effMax;
+  const subDispMin = hasSubBases ? (inst.combinedMin ?? profiles.reduce((s, p) => s + (p.minBases ?? 0), 0)) : effMin;
+  const subDispMax = hasSubBases ? (inst.combinedMax ?? profiles.reduce((s, p) => s + (p.maxBases ?? p.bases), 0)) : effMax;
 
   const total =
     (hasSubBases
@@ -1225,9 +1230,14 @@ function App() {
       const lo = sp.minBases ?? 0;
       const hi = sp.maxBases ?? 999;
       let next = Math.min(Math.max(cur + delta, lo), hi);
+      const totalAfter = arr.reduce((s, v, j) => s + (j === idx ? next : v), 0);
+      // combined-total clamp against the main unit's min/max
+      if (delta > 0 && i.combinedMax != null && totalAfter > i.combinedMax) next = cur;
+      if (delta < 0 && i.combinedMin != null && totalAfter < i.combinedMin) next = cur;
+      // per-sub-unit percentage cap
       if (delta > 0 && sp.maxPercentage != null) {
-        const totalAfter = arr.reduce((s, v, j) => s + (j === idx ? next : v), 0);
-        if (totalAfter > 0 && (next / totalAfter) * 100 > sp.maxPercentage) {
+        const after = arr.reduce((s, v, j) => s + (j === idx ? next : v), 0);
+        if (after > 0 && (next / after) * 100 > sp.maxPercentage) {
           next = cur; // would breach the percentage cap — reject
         }
       }
@@ -2778,8 +2788,10 @@ function RosterRow({
               p.maxPercentage != null &&
               subTotal + 1 > 0 &&
               ((p.bases + 1) / (subTotal + 1)) * 100 > p.maxPercentage;
-            const subAtMin = p.bases <= (p.minBases ?? 0);
-            const subAtMax = p.bases >= (p.maxBases ?? Infinity) || pctBlocked;
+            const overCombinedMax = subTotal + 1 > calc.subDispMax;
+            const underCombinedMin = subTotal - 1 < calc.subDispMin;
+            const subAtMin = p.bases <= (p.minBases ?? 0) || underCombinedMin;
+            const subAtMax = p.bases >= (p.maxBases ?? Infinity) || pctBlocked || overCombinedMax;
             return (
             <div
               key={p.name}
@@ -2817,7 +2829,7 @@ function RosterRow({
                     <button
                       data-testid={`sub-bases-plus-${inst.instanceId}-${p.name}`}
                       disabled={subAtMax}
-                      title={pctBlocked ? `Cannot exceed ${p.maxPercentage}% of total bases` : undefined}
+                      title={pctBlocked ? `Cannot exceed ${p.maxPercentage}% of total bases` : overCombinedMax ? `Combined bases cannot exceed ${calc.subDispMax}` : undefined}
                       onClick={() => onChangeSubBases(inst.instanceId, idx, 1)}
                       className="w-7 h-7 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
                     >

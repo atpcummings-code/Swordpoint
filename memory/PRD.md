@@ -102,6 +102,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Demo seeded on Welsh Teulu Foot: Warriors 2–10, Champion 1–2 (maxPercentage 34) → main "Bases 3–12".
 - Verified live: main shows summed bases + range (no −/+); Warriors/Champion −/+ respect min/max; Champion + blocked at 34% cap until Warriors grow, then blocked again at its maxBases 2; per-sub-unit and unit totals recompute correctly.
 
+## Implemented (2026-06 session, combined sub-unit base clamp)
+- The main unit's `minBases`/`maxBases` now clamp the SUM of all sub-unit bases (in addition to each sub-unit's own min/max and any maxPercentage). `makeInstance` stores `combinedMin`/`combinedMax` (unit min/max if defined, else the sum of sub-unit limits); `computeUnit` exposes them via `subDispMin`/`subDispMax` and the "Bases X–Y" display. A sub-unit's + is disabled when the combined total would exceed `combinedMax`; its − is disabled when the combined total would drop below `combinedMin`. `changeSubBases` enforces the same. All constraints apply simultaneously.
+- Verified live (Welsh Teulu Foot: unit 3–8, Warriors 2–10, Champion 1–2 @34%): + halts at combined 8 even with individual room left; − halts at combined 3; per-sub min/max/% still respected.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
