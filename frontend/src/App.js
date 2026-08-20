@@ -2772,20 +2772,20 @@ function RosterRow({
       )}
 
       {/* stats + bases */}
-      <div className="mt-3 flex items-center justify-between gap-4 flex-wrap">
+      <div className="mt-3 flex items-end justify-between gap-4">
         {calc.hasSubBases ? (
-          <div className="flex items-center gap-2" data-testid={`bases-readonly-${inst.instanceId}`}>
+          <div className="flex items-end gap-2" data-testid={`bases-readonly-${inst.instanceId}`}>
             <div className="text-center min-w-[64px]">
-              <div data-testid={`bases-count-${inst.instanceId}`} className="font-display text-xl font-bold text-slate-100 leading-none">
-                {calc.mainBases}
-              </div>
               <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
                 bases ({calc.subDispMin}–{calc.subDispMax})
+              </div>
+              <div data-testid={`bases-count-${inst.instanceId}`} className="font-display text-xl font-bold text-slate-100 leading-none">
+                {calc.mainBases}
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-end gap-2">
             <button
               data-testid={`bases-minus-${inst.instanceId}`}
               disabled={atMin}
@@ -2795,11 +2795,11 @@ function RosterRow({
               <Minus size={15} />
             </button>
             <div className="text-center min-w-[64px]">
-              <div data-testid={`bases-count-${inst.instanceId}`} className="font-display text-xl font-bold text-slate-100 leading-none">
-                {inst.bases}
-              </div>
               <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
                 bases ({calc.effMin}–{calc.effMax})
+              </div>
+              <div data-testid={`bases-count-${inst.instanceId}`} className="font-display text-xl font-bold text-slate-100 leading-none">
+                {inst.bases}
               </div>
             </div>
             <button
@@ -2815,7 +2815,7 @@ function RosterRow({
 
         {/* unified stat columns — same fixed-width grid used by sub-profile rows
             so every column vertically aligns with the header. */}
-        <div className="flex items-center gap-2 font-cond text-sm ml-auto">
+        <div className="flex items-end gap-2 font-cond text-sm ml-auto">
           <Stat label="Pts/Base" value={calc.hasSubBases ? "–" : calc.ppbBase} w testid={`unit-pts-base-${inst.instanceId}`} />
           <Stat
             label="Pts/Options"
@@ -2884,9 +2884,9 @@ function RosterRow({
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 font-cond text-sm">
+              <div className="flex items-end gap-2 font-cond text-sm">
                 {calc.hasSubBases && (
-                  <div className="flex items-center gap-1" data-testid={`subprofile-bases-${inst.instanceId}-${p.name}`}>
+                  <div className="flex items-end gap-1" data-testid={`subprofile-bases-${inst.instanceId}-${p.name}`}>
                     <button
                       data-testid={`sub-bases-minus-${inst.instanceId}-${p.name}`}
                       disabled={subAtMin}
@@ -2897,11 +2897,11 @@ function RosterRow({
                       <Minus size={13} />
                     </button>
                     <div className="text-center w-[52px]">
-                      <div data-testid={`sub-bases-count-${inst.instanceId}-${p.name}`} className="font-display text-base font-bold text-slate-100 leading-none">
-                        {p.bases}
-                      </div>
                       <div className="font-cond text-[9px] uppercase tracking-widest text-slate-500">
                         bases {p.minBases ?? 0}–{p.maxBases ?? "∞"}
+                      </div>
+                      <div data-testid={`sub-bases-count-${inst.instanceId}-${p.name}`} className="font-display text-base font-bold text-slate-100 leading-none">
+                        {p.bases}
                       </div>
                     </div>
                     <button
@@ -2915,7 +2915,7 @@ function RosterRow({
                     </button>
                   </div>
                 )}
-                <div className="flex items-center gap-2 ml-auto">
+                <div className="flex items-end gap-2 ml-auto">
                   <Stat label="Pts/Base" value={p.ptsBase} w sm testid={`subprofile-pts-base-${inst.instanceId}-${p.name}`} />
                   <Stat label="Pts/Options" value={p.ptsOptions} w sm testid={`subprofile-pts-options-${inst.instanceId}-${p.name}`} />
                   <Stat label="Total" value={p.total} w sm testid={`subprofile-pts-total-${inst.instanceId}-${p.name}`} />
