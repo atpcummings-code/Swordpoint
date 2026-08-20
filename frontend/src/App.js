@@ -196,7 +196,7 @@ const MOCK_DATA = {
           defence: 6,
           cohesion: 7,
           pointsPerBase: 15,
-          minBases: 3,
+          minBases: 6,
           maxBases: 8,
           specialRules: ["Superior Fighters", "Open Order", "Warband"],
           baseEquipment: ["Spear", "Shield"],
@@ -206,7 +206,7 @@ const MOCK_DATA = {
               attacks: 2,
               defence: 6,
               cohesion: 7,
-              minBases: 3,
+              minBases: 2,
               maxBases: 10,
               baseEquipment: ["Spear", "Shield"],
               specialRules: ["Superior Fighters", "Warband"],
@@ -2678,6 +2678,11 @@ function RosterRow({
     requireWarnings.push(
       `Cannot be fielded alongside ${excludeConflict.join(", ")} — remove one of these units.`
     );
+  }
+
+  // Sub-unit units: warn (do not block) when combined bases fall below the main unit min.
+  if (calc.hasSubBases && calc.mainBases < calc.subDispMin) {
+    requireWarnings.push(`Minimum ${calc.subDispMin} bases required (currently ${calc.mainBases}).`);
   }
 
   return (

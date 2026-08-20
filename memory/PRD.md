@@ -114,6 +114,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - New sub-profile field `onBaseAdded: { trigger:"oneOrMore", apply:[{ type:"specialRule"|"equipment", name, target:"self"|"all"|<subunit name/id> }] }`. When a sub-unit's base count is ≥ 1 the listed rules/equipment are added to the targeted sub-unit(s); computed as a derived pass in `computeUnit`, so dropping to 0 bases automatically removes them. Captured via `readSubProfile`.
 - Demo seeded on Welsh Teulu Foot / Champion (min 0): +1 base adds "Warlord" to all sub-units and "Banner" to Champion; back to 0 removes both. Verified live.
 
+## Implemented (2026-06 session, sub-unit minimum warning)
+- For sub-unit units, the unit card now shows a warning ("Minimum X bases required (currently Y).") when the combined sub-unit base total is below the main unit's min. Added to the existing per-card `requireWarnings` amber block (same styling as other card warnings). Warning-only — never blocks Save/continue — and clears automatically once the total meets/exceeds the min.
+- Verified live: Teulu Foot (unit min 6, sub mins sum 2) shows the warning at 2, updates through 3/4/5, clears at 6.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
