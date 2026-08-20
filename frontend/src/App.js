@@ -2744,14 +2744,6 @@ function RosterRow({
           {allyName && isAlliesCat(inst.categoryId) && (
             <span className="font-cond text-[11px] text-emerald-500/80">{allyName}</span>
           )}
-          {inst.description && (
-            <p
-              data-testid={`unit-description-${inst.instanceId}`}
-              className="font-body text-xs text-slate-400 mt-1 max-w-md"
-            >
-              {inst.description}
-            </p>
-          )}
         </div>
 
         <div className="flex items-center gap-1 no-print">
@@ -2769,6 +2761,15 @@ function RosterRow({
           </IconBtn>
         </div>
       </div>
+
+      {inst.description && (
+        <p
+          data-testid={`unit-description-${inst.instanceId}`}
+          className="font-body text-xs text-slate-400 mt-2 w-full"
+        >
+          {inst.description}
+        </p>
+      )}
 
       {/* stats + bases */}
       <div className="mt-3 flex items-center justify-between gap-4 flex-wrap">
