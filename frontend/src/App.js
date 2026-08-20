@@ -196,8 +196,8 @@ const MOCK_DATA = {
           defence: 6,
           cohesion: 7,
           pointsPerBase: 15,
-          minBases: 6,
-          maxBases: 8,
+          minBases: 2,
+          maxBases: 12,
           specialRules: ["Superior Fighters", "Open Order", "Warband"],
           baseEquipment: ["Spear", "Shield"],
           subProfiles: [
@@ -206,8 +206,9 @@ const MOCK_DATA = {
               attacks: 2,
               defence: 6,
               cohesion: 7,
-              minBases: 2,
+              minBases: 1,
               maxBases: 10,
+              minPercentage: 50,
               baseEquipment: ["Spear", "Shield"],
               specialRules: ["Superior Fighters", "Warband"],
             },
@@ -217,8 +218,7 @@ const MOCK_DATA = {
               defence: 6,
               cohesion: 8,
               minBases: 0,
-              maxBases: 2,
-              maxPercentage: 34,
+              maxBases: 6,
               onBaseAdded: {
                 trigger: "oneOrMore",
                 apply: [
@@ -881,6 +881,7 @@ function readSubProfile(sp) {
     minBases: pickStat(sp, ["minBases", "minBase"]),
     maxBases: pickStat(sp, ["maxBases", "maxBase"]),
     maxPercentage: pickStat(sp, ["maxPercentage", "maxPct", "maxPercent"]),
+    minPercentage: pickStat(sp, ["minPercentage", "minPct", "minPercent"]),
     attacks: pickStat(src, ["attacks", "A", "a"]),
     defence: pickStat(src, ["defence", "defense", "D", "d"]),
     cohesion: pickStat(src, ["cohesion", "C", "c", "Coh", "coh", "combat"]),
@@ -998,6 +999,7 @@ function computeUnit(inst) {
       minBases: sp.minBases,
       maxBases: sp.maxBases,
       maxPercentage: sp.maxPercentage,
+      minPercentage: sp.minPercentage,
       ptsUnit,
       rules: pRules,
       equipment: pEquip,
@@ -1275,6 +1277,14 @@ function App() {
         const after = arr.reduce((s, v, j) => s + (j === idx ? next : v), 0);
         if (after > 0 && (next / after) * 100 > sp.maxPercentage) {
           next = cur; // would breach the percentage cap — reject
+        }
+      }
+      // per-sub-unit percentage floor
+      if (delta < 0 && sp.minPercentage != null) {
+        const after = arr.reduce((s, v, j) => s + (j === idx ? next : v), 0);
+        const prop = after > 0 ? (next / after) * 100 : 0;
+        if (prop < sp.minPercentage) {
+          next = cur; // would drop below the percentage floor — reject
         }
       }
       arr[idx] = next;
@@ -2684,6 +2694,18 @@ function RosterRow({
   if (calc.hasSubBases && calc.mainBases < calc.subDispMin) {
     requireWarnings.push(`Minimum ${calc.subDispMin} bases required (currently ${calc.mainBases}).`);
   }
+  // Sub-unit percentage floor: warn when a sub-unit is below its minPercentage of total bases.
+  if (calc.hasSubBases && calc.mainBases > 0) {
+    calc.profiles.forEach((p) => {
+      if (p.minPercentage == null) return;
+      const prop = (p.bases / calc.mainBases) * 100;
+      if (prop < p.minPercentage) {
+        requireWarnings.push(
+          `${p.name}: at least ${p.minPercentage}% of bases required (currently ${Math.round(prop)}%).`
+        );
+      }
+    });
+  }
 
   return (
     <div
@@ -2831,7 +2853,15 @@ function RosterRow({
               ((p.bases + 1) / (subTotal + 1)) * 100 > p.maxPercentage;
             const overCombinedMax = subTotal + 1 > calc.subDispMax;
             const underCombinedMin = subTotal - 1 < calc.subDispMin;
-            const subAtMin = p.bases <= (p.minBases ?? 0) || underCombinedMin;
+            const pctMinBlocked =
+              p.minPercentage != null &&
+              (() => {
+                const nb = p.bases - 1;
+                const nt = subTotal - 1;
+                const prop = nt > 0 ? (nb / nt) * 100 : 0;
+                return prop < p.minPercentage;
+              })();
+            const subAtMin = p.bases <= (p.minBases ?? 0) || underCombinedMin || pctMinBlocked;
             const subAtMax = p.bases >= (p.maxBases ?? Infinity) || pctBlocked || overCombinedMax;
             return (
             <div
@@ -2847,6 +2877,11 @@ function RosterRow({
                     max {p.maxPercentage}%
                   </span>
                 )}
+                {p.minPercentage != null && (
+                  <span className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
+                    min {p.minPercentage}%
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 font-cond text-sm">
                 {calc.hasSubBases && (
@@ -2854,6 +2889,7 @@ function RosterRow({
                     <button
                       data-testid={`sub-bases-minus-${inst.instanceId}-${p.name}`}
                       disabled={subAtMin}
+                      title={pctMinBlocked ? `Cannot drop below ${p.minPercentage}% of total bases` : undefined}
                       onClick={() => onChangeSubBases(inst.instanceId, idx, -1)}
                       className="w-7 h-7 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
                     >

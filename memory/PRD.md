@@ -118,6 +118,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - For sub-unit units, the unit card now shows a warning ("Minimum X bases required (currently Y).") when the combined sub-unit base total is below the main unit's min. Added to the existing per-card `requireWarnings` amber block (same styling as other card warnings). Warning-only — never blocks Save/continue — and clears automatically once the total meets/exceeds the min.
 - Verified live: Teulu Foot (unit min 6, sub mins sum 2) shows the warning at 2, updates through 3/4/5, clears at 6.
 
+## Implemented (2026-06 session, sub-unit minPercentage)
+- Added `minPercentage` on sub-profiles (aliases minPct/minPercent), mirroring `maxPercentage`. A sub-unit's bases must be ≥ that % of the unit's total bases. Enforcement (option b): the sub-unit's − button is disabled when reducing would breach the floor (also enforced in `changeSubBases`), AND a card warning shows "<name>: at least X% of bases required (currently Y%)." that clears when restored. A "MIN X%" badge shows next to the sub-unit title.
+- Verified live: Warriors minPercentage 50 → − disabled at 50% boundary; warning at 40%; clears back at 50%.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
