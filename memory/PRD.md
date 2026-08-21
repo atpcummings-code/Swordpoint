@@ -122,6 +122,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Added `minPercentage` on sub-profiles (aliases minPct/minPercent), mirroring `maxPercentage`. A sub-unit's bases must be ≥ that % of the unit's total bases. Enforcement (option b): the sub-unit's − button is disabled when reducing would breach the floor (also enforced in `changeSubBases`), AND a card warning shows "<name>: at least X% of bases required (currently Y%)." that clears when restored. A "MIN X%" badge shows next to the sub-unit title.
 - Verified live: Warriors minPercentage 50 → − disabled at 50% boundary; warning at 40%; clears back at 50%.
 
+## Fixed (2026-06 session, sub-unit percentage recalc)
+- Added a per-render `maxPercentage` card warning (mirroring the existing `minPercentage` one) so violations are detected on every base-count change across ALL sub-units — including when reducing one sub-unit pushes another over its cap. Message: "<name>: at most X% of bases allowed (currently Y%)." Both floor and cap are re-evaluated each render.
+- Verified live: Warriors 3 / Champion 2 (Champion 40%) → no warning; reducing Warriors to 2 (Champion 50%) → warning fires immediately.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

@@ -208,7 +208,7 @@ const MOCK_DATA = {
               cohesion: 7,
               minBases: 1,
               maxBases: 10,
-              minPercentage: 50,
+              minPercentage: 20,
               baseEquipment: ["Spear", "Shield"],
               specialRules: ["Superior Fighters", "Warband"],
             },
@@ -219,6 +219,7 @@ const MOCK_DATA = {
               cohesion: 8,
               minBases: 0,
               maxBases: 6,
+              maxPercentage: 40,
               onBaseAdded: {
                 trigger: "oneOrMore",
                 apply: [
@@ -2694,14 +2695,19 @@ function RosterRow({
   if (calc.hasSubBases && calc.mainBases < calc.subDispMin) {
     requireWarnings.push(`Minimum ${calc.subDispMin} bases required (currently ${calc.mainBases}).`);
   }
-  // Sub-unit percentage floor: warn when a sub-unit is below its minPercentage of total bases.
+  // Sub-unit percentage rules: recheck every sub-unit's share of the total on every
+  // render (i.e. after any base change on any sub-unit), warning on both floor & cap.
   if (calc.hasSubBases && calc.mainBases > 0) {
     calc.profiles.forEach((p) => {
-      if (p.minPercentage == null) return;
       const prop = (p.bases / calc.mainBases) * 100;
-      if (prop < p.minPercentage) {
+      if (p.minPercentage != null && prop < p.minPercentage) {
         requireWarnings.push(
           `${p.name}: at least ${p.minPercentage}% of bases required (currently ${Math.round(prop)}%).`
+        );
+      }
+      if (p.maxPercentage != null && prop > p.maxPercentage) {
+        requireWarnings.push(
+          `${p.name}: at most ${p.maxPercentage}% of bases allowed (currently ${Math.round(prop)}%).`
         );
       }
     });
