@@ -2935,27 +2935,41 @@ function RosterRow({
                 </div>
               </div>
               {(p.equipment.length > 0 || p.rules.length > 0) && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {p.equipment.map((item) => (
-                    <span
-                      key={`eq-${item}`}
-                      className="font-cond text-[11px] rounded px-2 py-0.5 border border-slate-700 bg-slate-800/60 text-slate-200"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                  {p.rules.map((r) => (
-                    <span
-                      key={`rl-${r}`}
-                      className={`font-cond text-[11px] rounded px-2 py-0.5 border ${
-                        isSkirmRule(r)
-                          ? "border-amber-700/50 bg-amber-500/10 text-amber-300"
-                          : "border-slate-700 bg-slate-800/60 text-slate-300"
-                      }`}
-                    >
-                      {r}
-                    </span>
-                  ))}
+                <div className="mt-2 pt-2 border-t border-slate-800/70 grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="font-cond text-[11px] uppercase tracking-widest text-slate-500 mb-2">
+                      Weapons and Armour
+                    </div>
+                    <div className="flex flex-wrap gap-1.5" data-testid={`subprofile-equipment-${inst.instanceId}-${p.name}`}>
+                      {p.equipment.map((item) => (
+                        <span
+                          key={`eq-${item}`}
+                          className="font-cond text-[11px] rounded px-2 py-0.5 border border-slate-700 bg-slate-800/60 text-slate-200"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-cond text-[11px] uppercase tracking-widest text-slate-500 mb-2">
+                      Special Rules
+                    </div>
+                    <div className="flex flex-wrap gap-1.5" data-testid={`subprofile-rules-${inst.instanceId}-${p.name}`}>
+                      {p.rules.map((r) => (
+                        <span
+                          key={`rl-${r}`}
+                          className={`font-cond text-[11px] rounded px-2 py-0.5 border ${
+                            isSkirmRule(r)
+                              ? "border-amber-700/50 bg-amber-500/10 text-amber-300"
+                              : "border-slate-700 bg-slate-800/60 text-slate-300"
+                          }`}
+                        >
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
