@@ -136,6 +136,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Optional unit field `combinedFormation: [{ label, disableSubProfiles }]`. Renders a "Combined Formation %:" dropdown as the FIRST item in the Unit Options row (same style/size as option controls). First option auto-selected on load; selecting an option hides the named sub-profiles (filtered out of `computeUnit.profiles` before any totals/rules/equipment/onBaseAdded/percentage logic, so hidden sub-profiles have zero impact) and re-enables others. `makeInstance` stores `combinedFormation`/`combinedFormationIndex` (persists via Save/Load); `changeFormation` handler updates the index. Units without the field are unchanged.
 - Verified live (Teulu Foot: 25%→hide Champion, 50%→show): default hides Champion, unit total = Warriors-only (15), toggling reveals/hides correctly.
 
+## Fixed (2026-06 session, combinedFormation + button)
+- Bug: for units with a `combinedFormation` dropdown, a sub-unit's `+` button did nothing when the combined VISIBLE sub-unit bases were exactly one below the main unit max. Root cause: `changeSubBases` summed ALL sub-profiles (including ones hidden by the current formation selection) when checking `combinedMax`, so the handler rejected an increment that the render-side button logic (which sums only visible profiles) allowed.
+- Fix: `changeSubBases` now builds a `hiddenNames` set from the active `combinedFormation` option's `disableSubProfiles` and excludes those profiles from `sumVisible()`, so the combined-total clamp, maxPercentage cap and minPercentage floor all use the same visible total shown in the UI (matches `computeUnit.mainBases`, which already filters hidden profiles).
+- Status: code fix applied and consistent across handler + render; USER opted to verify the outcome themselves.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

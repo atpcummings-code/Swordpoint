@@ -1360,20 +1360,32 @@ function App() {
       const lo = sp.minBases ?? 0;
       const hi = sp.maxBases ?? 999;
       let next = Math.min(Math.max(cur + delta, lo), hi);
-      const totalAfter = arr.reduce((s, v, j) => s + (j === idx ? next : v), 0);
+      // Exclude sub-profiles hidden by the current combinedFormation selection from
+      // total calcs, so the handler matches the visible total used by the +/- buttons.
+      const cf = i.combinedFormation;
+      const hiddenNames =
+        Array.isArray(cf) && cf.length
+          ? new Set(cf[Math.min(i.combinedFormationIndex || 0, cf.length - 1)]?.disableSubProfiles || [])
+          : new Set();
+      const sumVisible = () =>
+        arr.reduce(
+          (s, v, j) => (hiddenNames.has(subs[j]?.name) ? s : s + (j === idx ? next : v)),
+          0
+        );
+      const totalAfter = sumVisible();
       // combined-total clamp against the main unit's min/max
       if (delta > 0 && i.combinedMax != null && totalAfter > i.combinedMax) next = cur;
       if (delta < 0 && i.combinedMin != null && totalAfter < i.combinedMin) next = cur;
       // per-sub-unit percentage cap
       if (delta > 0 && sp.maxPercentage != null) {
-        const after = arr.reduce((s, v, j) => s + (j === idx ? next : v), 0);
+        const after = sumVisible();
         if (after > 0 && (next / after) * 100 > sp.maxPercentage) {
           next = cur; // would breach the percentage cap — reject
         }
       }
       // per-sub-unit percentage floor
       if (delta < 0 && sp.minPercentage != null) {
-        const after = arr.reduce((s, v, j) => s + (j === idx ? next : v), 0);
+        const after = sumVisible();
         const prop = after > 0 ? (next / after) * 100 : 0;
         if (prop < sp.minPercentage) {
           next = cur; // would drop below the percentage floor — reject
