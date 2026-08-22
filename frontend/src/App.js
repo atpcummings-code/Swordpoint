@@ -219,6 +219,7 @@ const MOCK_DATA = {
               cohesion: 8,
               minBases: 0,
               maxBases: 6,
+              minPercentage: 10,
               maxPercentage: 40,
               onBaseAdded: {
                 trigger: "oneOrMore",
@@ -2879,14 +2880,14 @@ function RosterRow({
               {/* title on its own row, above the stats */}
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="font-body font-semibold text-slate-100">{p.name}</span>
-                {p.maxPercentage != null && (
-                  <span className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
-                    max {p.maxPercentage}%
-                  </span>
-                )}
                 {p.minPercentage != null && (
                   <span className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
                     min {p.minPercentage}%
+                  </span>
+                )}
+                {p.maxPercentage != null && (
+                  <span className="font-cond text-[10px] uppercase tracking-widest text-slate-500">
+                    max {p.maxPercentage}%
                   </span>
                 )}
               </div>
