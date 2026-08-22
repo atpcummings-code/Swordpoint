@@ -126,6 +126,12 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Added a per-render `maxPercentage` card warning (mirroring the existing `minPercentage` one) so violations are detected on every base-count change across ALL sub-units — including when reducing one sub-unit pushes another over its cap. Message: "<name>: at most X% of bases allowed (currently Y%)." Both floor and cap are re-evaluated each render.
 - Verified live: Warriors 3 / Champion 2 (Champion 40%) → no warning; reducing Warriors to 2 (Champion 50%) → warning fires immediately.
 
+## Implemented (2026-06 session, cross-supplement allies)
+- Background-load `supplements.json` ([{key,name,file}]) on app startup into `supplementsMeta`.
+- `alliedArmyKeys` entries accept an optional `supplement` key (captured in `cat._allySupplement`). When present, that supplement's file is fetched (cached in `externalCacheRef`) and its armies merged into `externalArmies`; allied unit lookups use a combined `allyArmies` map (current supplement wins on key clash, external used otherwise). No `supplement` → falls back to the current supplement (existing behaviour).
+- Allies UI shows the supplement name ("· <name>") next to the allied army name in both the checkbox list and the active allied-units header.
+- Verified: supplements.json fetched at startup; fallback allies still render (regression, real data). NOTE: the cross-supplement fetch + name suffix are code-verified only — no live army currently sets the `supplement` field, so it couldn't be exercised end-to-end.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

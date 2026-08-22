@@ -709,6 +709,11 @@ function normalizeData(data) {
               c._allyUnitFilter = c._allyUnitFilter || {};
               c._allyUnitFilter[key] = { onlyUnits: only, excludesUnits: excl };
             }
+            // capture optional supplement source for this allied army
+            if (key && entry.supplement) {
+              c._allySupplement = c._allySupplement || {};
+              c._allySupplement[key] = entry.supplement;
+            }
             return key;
           }
           return entry;
@@ -1093,6 +1098,9 @@ function App() {
   const [roster, setRoster] = useState([]);
   const [checkedAllies, setCheckedAllies] = useState([]); // allied army keys enabled
   const [selectedSupplementUrl, setSelectedSupplementUrl] = useState("");
+  const [supplementsMeta, setSupplementsMeta] = useState([]); // [{key,name,file}] from supplements.json
+  const [externalArmies, setExternalArmies] = useState({}); // armies fetched from other supplements for allies
+  const externalCacheRef = useRef({}); // supplementKey -> armies map (fetched once)
 
   /* --- load data for a supplement url (remote with graceful fallback) --- */
   const loadData = async (url, opts = {}) => {
@@ -1161,6 +1169,63 @@ function App() {
 
   const armies = data?.armies || {};
   const army = selectedArmyKey ? armies[selectedArmyKey] : null;
+  // allied armies may live in other supplements; merge external ones (current file wins on key clash)
+  const allyArmies = useMemo(() => ({ ...externalArmies, ...armies }), [externalArmies, armies]);
+  const supplementNames = useMemo(() => {
+    const m = {};
+    supplementsMeta.forEach((s) => { if (s && s.key) m[s.key] = s.name || s.key; });
+    return m;
+  }, [supplementsMeta]);
+
+  // Background load of the supplements catalog on startup.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(BASE_DATA_URL + "supplements.json", { cache: "no-store" });
+        if (!res.ok) return;
+        const arr = JSON.parse(stripJsonc(await res.text()));
+        if (Array.isArray(arr)) setSupplementsMeta(arr);
+      } catch {
+        /* ignore — allies without an explicit supplement still work */
+      }
+    })();
+  }, []);
+
+  // Prefetch any supplements referenced by the current army's allied entries.
+  useEffect(() => {
+    if (!army || !supplementsMeta.length) return;
+    const needed = new Set();
+    (army.categories || []).forEach((c) =>
+      Object.values(c._allySupplement || {}).forEach((sk) => needed.add(sk))
+    );
+    const toFetch = [...needed].filter((sk) => !externalCacheRef.current[sk]);
+    if (!toFetch.length) return;
+    let cancelled = false;
+    (async () => {
+      for (const sk of toFetch) {
+        const meta = supplementsMeta.find((s) => s.key === sk);
+        if (!meta || !meta.file) continue;
+        try {
+          const res = await fetch(BASE_DATA_URL + meta.file, { cache: "no-store" });
+          if (!res.ok) continue;
+          const parsed = JSON.parse(stripJsonc(await res.text()));
+          if (parsed && parsed.armies) {
+            normalizeData(parsed);
+            externalCacheRef.current[sk] = parsed.armies;
+          }
+        } catch {
+          /* ignore individual supplement fetch failures */
+        }
+      }
+      if (cancelled) return;
+      const merged = {};
+      Object.values(externalCacheRef.current).forEach((am) => Object.assign(merged, am));
+      setExternalArmies(merged);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [army, supplementsMeta]);
 
   /* --- army switch: full state cleanup to avoid overlap logic bugs --- */
   const handleArmyChange = (key) => {
@@ -1471,12 +1536,12 @@ function App() {
     (army.categories || []).forEach((cat) => {
       if (Array.isArray(cat.alliedArmyKeys)) {
         cat.alliedArmyKeys.forEach((ak) => {
-          if (armies[ak]) defs.push(...(armies[ak].units || []));
+          if (allyArmies[ak]) defs.push(...(allyArmies[ak].units || []));
         });
       }
     });
     return defs;
-  }, [army, armies]);
+  }, [army, armies, allyArmies]);
 
   const excludesByUnitId = useMemo(() => {
     const asArr = (v) => (Array.isArray(v) ? v : v ? [v] : []);
@@ -1845,7 +1910,7 @@ function App() {
     (army.categories || []).forEach((cat) => {
       if (Array.isArray(cat.alliedArmyKeys)) {
         cat.alliedArmyKeys.forEach((ak) => {
-          if (armies[ak]) (armies[ak].units || []).forEach((u) => (nameById[u.id] = u.name));
+          if (allyArmies[ak]) (allyArmies[ak].units || []).forEach((u) => (nameById[u.id] = u.name));
         });
       }
     });
@@ -1871,8 +1936,8 @@ function App() {
     (army.categories || []).forEach((cat) => {
       if (Array.isArray(cat.alliedArmyKeys)) {
         cat.alliedArmyKeys.forEach((ak) => {
-          if (checkedAllies.includes(`${cat.id}::${ak}`) && armies[ak]) {
-            availableUnits.push(...(armies[ak].units || []));
+          if (checkedAllies.includes(`${cat.id}::${ak}`) && allyArmies[ak]) {
+            availableUnits.push(...(allyArmies[ak].units || []));
           }
         });
       }
@@ -1964,7 +2029,7 @@ function App() {
       (army.categories || []).forEach((cat) => {
         if (Array.isArray(cat.alliedArmyKeys)) {
           cat.alliedArmyKeys.forEach((ak) => {
-            if (armies[ak]) all.push(...(armies[ak].units || []));
+            if (allyArmies[ak]) all.push(...(allyArmies[ak].units || []));
           });
         }
       });
@@ -2066,7 +2131,7 @@ function App() {
     });
 
     return w;
-  }, [army, armies, computed, totalPoints, maxPoints, roster, checkedAllies, alliesCategory, maxAllies]);
+  }, [army, armies, allyArmies, computed, totalPoints, maxPoints, roster, checkedAllies, alliesCategory, maxAllies]);
 
   const isValid = warnings.length === 0 && roster.length > 0;
 
@@ -2327,7 +2392,7 @@ function App() {
                 cat={cat}
                 army={army}
                 homeKey={selectedArmyKey}
-                armies={armies}
+                armies={allyArmies}
                 checkedAllies={checkedAllies}
                 maxAllies={maxAllies}
                 disabledAllies={disabledAllies}
@@ -2337,6 +2402,7 @@ function App() {
                 maxPoints={maxPoints}
                 rosterCounts={rosterCounts}
                 requireHints={requireHints}
+                supplementNames={supplementNames}
                 catFull={catFullIds.has(cat.id)}
               />
             ))}
@@ -2375,7 +2441,7 @@ function App() {
                   key={inst.instanceId}
                   inst={inst}
                   calc={calc}
-                  armies={armies}
+                  armies={allyArmies}
                   index={idx}
                   total={roster.length}
                   equipUsage={equipUsage}
@@ -2478,7 +2544,7 @@ function ValidationPanel({ warnings, isValid, empty }) {
   );
 }
 
-function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies, disabledAllies, onToggleAlly, onAdd, blockedAddIds, maxPoints, rosterCounts, requireHints, catFull }) {
+function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies, disabledAllies, onToggleAlly, onAdd, blockedAddIds, maxPoints, rosterCounts, requireHints, supplementNames, catFull }) {
   const homeUnits = (army?.units || []).filter((u) => u.category === cat.id);
   const isAllies = Array.isArray(cat.alliedArmyKeys);
 
@@ -2540,6 +2606,11 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
                     />
                     <span className={checked ? "text-emerald-300" : "text-slate-300"}>
                       {ally.armyName}
+                      {cat._allySupplement?.[ak] && supplementNames?.[cat._allySupplement[ak]] && (
+                        <span className="ml-1 text-[11px] uppercase tracking-widest text-slate-500">
+                          · {supplementNames[cat._allySupplement[ak]]}
+                        </span>
+                      )}
                     </span>
                   </label>
                 );
@@ -2562,6 +2633,9 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
                 <div key={ak} className="rounded-lg border border-emerald-800/40 bg-emerald-950/20 p-2 space-y-2">
                   <div className="font-cond text-xs uppercase tracking-widest text-emerald-400 px-1">
                     {armies[ak].armyName}
+                    {cat._allySupplement?.[ak] && supplementNames?.[cat._allySupplement[ak]] && (
+                      <span className="ml-1 text-slate-500">· {supplementNames[cat._allySupplement[ak]]}</span>
+                    )}
                   </div>
                   {(armies[ak].units || [])
                     .filter((u) => u.type !== "General")
