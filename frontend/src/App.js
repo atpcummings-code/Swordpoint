@@ -200,6 +200,10 @@ const MOCK_DATA = {
           maxBases: 12,
           specialRules: ["Superior Fighters", "Open Order", "Warband"],
           baseEquipment: ["Spear", "Shield"],
+          combinedFormation: [
+            { label: "25%", disableSubProfiles: ["Champion"] },
+            { label: "50%", disableSubProfiles: [] },
+          ],
           subProfiles: [
             {
               name: "Warriors",
@@ -832,6 +836,8 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     baseEquipment: Array.isArray(unit.baseEquipment) ? [...unit.baseEquipment] : [],
     optionalEquipment: Array.isArray(unit.optionalEquipment) ? unit.optionalEquipment.map(readOption) : [],
     subProfiles: subs,
+    combinedFormation: Array.isArray(unit.combinedFormation) && unit.combinedFormation.length ? unit.combinedFormation : null,
+    combinedFormationIndex: 0,
     subBases: hasSubBases ? subs.map((s) => (s.minBases != null ? s.minBases : 1)) : null,
     // combined-total clamp: main unit min/max if defined, else the sum of sub-unit limits
     combinedMin: hasSubBases ? (unit.minBases != null ? unit.minBases : sumSubMin) : null,
@@ -969,7 +975,7 @@ function computeUnit(inst) {
   /* Per-sub-profile rows. Untargeted (general) active options apply to every
      profile; options with a matching targetProfile apply only to that row.
      Points from every active option are still summed into the unit total. */
-  const profiles = (inst.subProfiles || []).map((sp, idx) => {
+  let profiles = (inst.subProfiles || []).map((sp, idx) => {
     const applies = active.filter((e) => !e.targetProfile || e.targetProfile === sp.name);
     const sum = (key) => applies.reduce((s, e) => s + (e[key] || 0), 0);
     const attacks = sp.attacks != null ? sp.attacks + sum("attacksModifier") : null;
@@ -1012,6 +1018,21 @@ function computeUnit(inst) {
       equipment: pEquip,
     };
   });
+
+  /* combinedFormation: the selected option hides the named sub-profiles entirely
+     (removed from `profiles` before any totals/rules/equipment are derived). */
+  let combinedFormationDisabled = [];
+  {
+    const cf = inst.combinedFormation;
+    if (Array.isArray(cf) && cf.length) {
+      const opt = cf[Math.min(inst.combinedFormationIndex || 0, cf.length - 1)];
+      combinedFormationDisabled = Array.isArray(opt?.disableSubProfiles) ? opt.disableSubProfiles : [];
+      if (combinedFormationDisabled.length) {
+        const hide = new Set(combinedFormationDisabled);
+        profiles = profiles.filter((p) => !hide.has(p.name));
+      }
+    }
+  }
 
   /* onBaseAdded: when a sub-unit has >= 1 base, add its configured rules/equipment
      to the target sub-unit(s). Recomputed each render, so dropping to 0 bases
@@ -1323,6 +1344,10 @@ function App() {
 
   /* Adjust bases for a single sub-unit, clamped to its own min/max and its
      optional maxPercentage of the unit's total bases. */
+  const changeFormation = (instanceId, index) => {
+    updateInst(instanceId, (i) => ({ ...i, combinedFormationIndex: index }));
+  };
+
   const changeSubBases = (instanceId, idx, delta) => {
     updateInst(instanceId, (i) => {
       const subs = i.subProfiles || [];
@@ -2450,6 +2475,7 @@ function App() {
                   enabledEveryLocked={equipLocks[inst.instanceId]}
                   onChangeBases={changeBases}
                   onChangeSubBases={changeSubBases}
+                  onChangeFormation={changeFormation}
                   onToggleEquip={toggleEquipment}
                   onDuplicate={duplicateUnit}
                   onMove={moveUnit}
@@ -2727,6 +2753,7 @@ function RosterRow({
   enabledEveryLocked,
   onChangeBases,
   onChangeSubBases,
+  onChangeFormation,
   onToggleEquip,
   onDuplicate,
   onMove,
@@ -3094,12 +3121,32 @@ function RosterRow({
       )}
 
       {/* equipment */}
-      {inst.optionalEquipment.length > 0 && (
+      {(inst.optionalEquipment.length > 0 || inst.combinedFormation) && (
         <div className="mt-3 pt-3 border-t border-slate-800">
           <div className="font-cond text-[11px] uppercase tracking-widest text-slate-500 mb-2">
             Unit Options
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {inst.combinedFormation && (
+              <label
+                data-testid={`combined-formation-wrap-${inst.instanceId}`}
+                className="inline-flex items-center gap-2 font-cond text-sm select-none text-slate-300"
+              >
+                <span>Combined Formation %:</span>
+                <select
+                  data-testid={`combined-formation-${inst.instanceId}`}
+                  value={inst.combinedFormationIndex || 0}
+                  onChange={(e) => onChangeFormation(inst.instanceId, Number(e.target.value))}
+                  className="bg-slate-900 border border-slate-700 rounded-md px-2 py-1 font-cond text-sm text-emerald-300 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                  {inst.combinedFormation.map((opt, i) => (
+                    <option key={i} value={i}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             {(() => {
               const disabledNames = new Set(
                 inst.optionalEquipment

@@ -132,6 +132,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Allies UI shows the supplement name ("· <name>") next to the allied army name in both the checkbox list and the active allied-units header.
 - Verified: supplements.json fetched at startup; fallback allies still render (regression, real data). NOTE: the cross-supplement fetch + name suffix are code-verified only — no live army currently sets the `supplement` field, so it couldn't be exercised end-to-end.
 
+## Implemented (2026-06 session, combinedFormation)
+- Optional unit field `combinedFormation: [{ label, disableSubProfiles }]`. Renders a "Combined Formation %:" dropdown as the FIRST item in the Unit Options row (same style/size as option controls). First option auto-selected on load; selecting an option hides the named sub-profiles (filtered out of `computeUnit.profiles` before any totals/rules/equipment/onBaseAdded/percentage logic, so hidden sub-profiles have zero impact) and re-enables others. `makeInstance` stores `combinedFormation`/`combinedFormationIndex` (persists via Save/Load); `changeFormation` handler updates the index. Units without the field are unchanged.
+- Verified live (Teulu Foot: 25%→hide Champion, 50%→show): default hides Champion, unit total = Warriors-only (15), toggling reveals/hides correctly.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
