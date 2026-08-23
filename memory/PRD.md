@@ -147,6 +147,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Root cause 2 (the "+ does nothing"): `computeUnit` FILTERS out sub-profiles hidden by the active `combinedFormation` (line ~1032), then the roster render maps the FILTERED `calc.profiles` with a fresh `idx` and passed that to `changeSubBases`, which indexes the FULL `subProfiles`/`subBases` arrays. When an earlier profile is hidden (25% hides "Bowmen", full idx 1), the visible "Mixed" (filtered idx 1) resolved to the hidden "Bowmen" — so the click mutated a hidden profile and nothing changed on screen. Fixed by tagging each profile with `origIdx` (its index in the full subProfiles list) and using `p.origIdx` in the +/- onClick handlers.
 - Verified live: 25% → Mixed 0→1, then Spearmen→6 lets Mixed→2 (2/8=25%); 50% → Bowmen increments correctly. Both index directions confirmed.
 
+## Implemented (2026-06 session, compareWithSubProfile)
+- New optional sub-profile field `compareWithSubProfile: { name, expression, ratio }` — a hard cross-constraint between one sub-unit's base count and another sub-unit in the SAME unit. Evaluated as `this.bases [expression] (target.bases * ratio)`; expressions: `lessThanOrEqual | lessThan | greaterThanOrEqual | greaterThan | equalTo` (via `SUB_COMPARE_EXPR`). Parsed in `readSubProfile`, carried through `computeUnit` per-profile object.
+- The source sub-unit's `+` is disabled when incrementing would breach the constraint (also enforced as a backstop in `changeSubBases`); the TARGET sub-unit's `−` is never disabled by this rule (its own min/percentage limits still apply). Hidden (combinedFormation) targets are skipped. A `+` tooltip explains the block. A per-card amber warning shows whenever the constraint is currently violated (e.g. after reducing the target): "<name>: must be <label> <ratio>× <target>'s bases (currently X vs <target> Y)."
+- Verified live via a Load-Army import on MOCK data (Archers ≤ 0.5× Spearmen): + disabled at 2/4, unlocks after Spearmen→6, Archers→3 then re-locks; reducing Spearmen to 2 keeps its − free and surfaces the violation warning + Warnings badge.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

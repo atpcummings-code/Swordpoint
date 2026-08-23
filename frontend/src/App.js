@@ -883,6 +883,16 @@ const pickStat = (obj, keys) => {
   for (const k of keys) if (obj[k] != null) return obj[k];
   return null;
 };
+/* Comparison expressions for sub-profile cross-constraints (compareWithSubProfile).
+   Evaluates: this subunit's bases [expr] (target subunit's bases * ratio). */
+const SUB_COMPARE_EXPR = {
+  lessThanOrEqual: (a, b) => a <= b,
+  lessThan: (a, b) => a < b,
+  greaterThanOrEqual: (a, b) => a >= b,
+  greaterThan: (a, b) => a > b,
+  equalTo: (a, b) => a === b,
+};
+
 function readSubProfile(sp) {
   const arr = (v) => (Array.isArray(v) ? [...v] : v ? [v] : []);
   const src = sp.stats && typeof sp.stats === "object" ? { ...sp, ...sp.stats } : sp;
@@ -895,6 +905,7 @@ function readSubProfile(sp) {
     maxBases: pickStat(sp, ["maxBases", "maxBase"]),
     maxPercentage: pickStat(sp, ["maxPercentage", "maxPct", "maxPercent"]),
     minPercentage: pickStat(sp, ["minPercentage", "minPct", "minPercent"]),
+    compareWithSubProfile: sp.compareWithSubProfile || null,
     attacks: pickStat(src, ["attacks", "A", "a"]),
     defence: pickStat(src, ["defence", "defense", "D", "d"]),
     cohesion: pickStat(src, ["cohesion", "C", "c", "Coh", "coh", "combat"]),
@@ -1014,6 +1025,7 @@ function computeUnit(inst) {
       maxBases: sp.maxBases,
       maxPercentage: sp.maxPercentage,
       minPercentage: sp.minPercentage,
+      compareWithSubProfile: sp.compareWithSubProfile,
       ptsUnit,
       rules: pRules,
       equipment: pEquip,
@@ -1390,6 +1402,18 @@ function App() {
         const prop = after > 0 ? (next / after) * 100 : 0;
         if (prop < sp.minPercentage) {
           next = cur; // would drop below the percentage floor — reject
+        }
+      }
+      // cross-constraint: compareWithSubProfile (this [expr] target*ratio) — never
+      // blocks the target's own reduction, only this sub-unit's increment.
+      if (delta > 0 && sp.compareWithSubProfile && sp.compareWithSubProfile.name) {
+        const cw = sp.compareWithSubProfile;
+        const tIdx = subs.findIndex((s) => s?.name === cw.name);
+        const fn = SUB_COMPARE_EXPR[cw.expression];
+        if (tIdx >= 0 && fn && !hiddenNames.has(cw.name)) {
+          const targetBases = arr[tIdx] ?? 0;
+          const bound = targetBases * (cw.ratio ?? 1);
+          if (!fn(next, bound)) next = cur; // increment would breach — reject
         }
       }
       arr[idx] = next;
@@ -2827,6 +2851,31 @@ function RosterRow({
       }
     });
   }
+  // Sub-unit cross-constraint: compareWithSubProfile (this [expr] target*ratio).
+  if (calc.hasSubBases) {
+    calc.profiles.forEach((p) => {
+      const cw = p.compareWithSubProfile;
+      if (!cw || !cw.name) return;
+      const target = calc.profiles.find((q) => q.name === cw.name);
+      const fn = SUB_COMPARE_EXPR[cw.expression];
+      if (!target || !fn) return;
+      const ratio = cw.ratio ?? 1;
+      const bound = target.bases * ratio;
+      if (!fn(p.bases, bound)) {
+        const exprLabel = {
+          lessThanOrEqual: "at most",
+          lessThan: "fewer than",
+          greaterThanOrEqual: "at least",
+          greaterThan: "more than",
+          equalTo: "exactly",
+        }[cw.expression] || cw.expression;
+        const ratioTxt = ratio === 1 ? `${cw.name}'s bases` : `${ratio}× ${cw.name}'s bases`;
+        requireWarnings.push(
+          `${p.name}: must be ${exprLabel} ${ratioTxt} (currently ${p.bases} vs ${cw.name} ${target.bases}).`
+        );
+      }
+    });
+  }
 
   return (
     <div
@@ -2984,7 +3033,19 @@ function RosterRow({
                 return prop < p.minPercentage;
               })();
             const subAtMin = p.bases <= (p.minBases ?? 0) || underCombinedMin || pctMinBlocked;
-            const subAtMax = p.bases >= (p.maxBases ?? Infinity) || pctBlocked || overCombinedMax;
+            // compareWithSubProfile: disable + when incrementing would breach the constraint
+            // against another (visible) sub-profile in the same unit.
+            let compareBlocked = false;
+            if (p.compareWithSubProfile && p.compareWithSubProfile.name) {
+              const cw = p.compareWithSubProfile;
+              const target = calc.profiles.find((q) => q.name === cw.name);
+              const fn = SUB_COMPARE_EXPR[cw.expression];
+              if (target && fn) {
+                const bound = target.bases * (cw.ratio ?? 1);
+                compareBlocked = !fn(p.bases + 1, bound);
+              }
+            }
+            const subAtMax = p.bases >= (p.maxBases ?? Infinity) || pctBlocked || overCombinedMax || compareBlocked;
             return (
             <div
               key={p.name}
@@ -3028,7 +3089,7 @@ function RosterRow({
                     <button
                       data-testid={`sub-bases-plus-${inst.instanceId}-${p.name}`}
                       disabled={subAtMax}
-                      title={pctBlocked ? `Cannot exceed ${p.maxPercentage}% of total bases` : overCombinedMax ? `Combined bases cannot exceed ${calc.subDispMax}` : undefined}
+                      title={pctBlocked ? `Cannot exceed ${p.maxPercentage}% of total bases` : overCombinedMax ? `Combined bases cannot exceed ${calc.subDispMax}` : compareBlocked ? `Limited by ${p.compareWithSubProfile.name} base count` : undefined}
                       onClick={() => onChangeSubBases(inst.instanceId, p.origIdx, 1)}
                       className="w-7 h-7 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
                     >
