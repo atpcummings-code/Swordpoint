@@ -917,6 +917,14 @@ function readSubProfile(sp) {
 /* Normalize an optional-equipment entry, tolerating both the flat schema
    (pointsModifier / defenceModifier / cohesionModifier / attacksModifier) and
    the nested schema (pointsPerBase for cost + statChanges: { defence, ... }). */
+/* An option applies to a sub-profile row when it is untargeted, or its
+   `targetProfile` (string OR array of strings) names that profile. */
+function optionTargetsProfile(e, profileName) {
+  if (e.targetProfile == null) return true;
+  const list = Array.isArray(e.targetProfile) ? e.targetProfile : [e.targetProfile];
+  return list.includes(profileName);
+}
+
 function readOption(e) {
   const sc = e.statChanges && typeof e.statChanges === "object" ? e.statChanges : {};
   const g = (obj, keys) => {
@@ -987,7 +995,7 @@ function computeUnit(inst) {
      profile; options with a matching targetProfile apply only to that row.
      Points from every active option are still summed into the unit total. */
   let profiles = (inst.subProfiles || []).map((sp, idx) => {
-    const applies = active.filter((e) => !e.targetProfile || e.targetProfile === sp.name);
+    const applies = active.filter((e) => optionTargetsProfile(e, sp.name));
     const sum = (key) => applies.reduce((s, e) => s + (e[key] || 0), 0);
     const attacks = sp.attacks != null ? sp.attacks + sum("attacksModifier") : null;
     const defence = sp.defence != null ? sp.defence + sum("defenceModifier") : null;
@@ -3279,8 +3287,15 @@ function RosterRow({
                   .flatMap((e) => e.enableHidden || [])
               );
               return inst.optionalEquipment.map((eq) => {
-                // hidden when its target sub-profile is disabled by the combinedFormation
-                if (eq.targetProfile && hiddenProfiles.has(eq.targetProfile)) return null;
+                // hidden when ALL its target sub-profile(s) are disabled by the
+                // combinedFormation (targetProfile may be a string or an array).
+                if (eq.targetProfile != null) {
+                  const targets = Array.isArray(eq.targetProfile)
+                    ? eq.targetProfile
+                    : [eq.targetProfile];
+                  if (targets.length && targets.every((n) => hiddenProfiles.has(n)))
+                    return null;
+                }
                 // hidden until revealed by a selected item's enableHidden
                 if (eq.hiddenUntilEnabled === "hidden" && !revealedNames.has(eq.name)) return null;
                 const on = inst.equipped.includes(eq.name);

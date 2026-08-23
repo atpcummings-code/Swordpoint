@@ -166,6 +166,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Works for both `countBy: "units"` (predicted +1 entry) and default bases (predicted += the unit's starting bases, `max(minBases,1)`). With no compareWith present the ids are blocked (threshold 0), matching the intent.
 - Verified live (temp MOCK rule, Tenant Cavalry ≤ 1× Tenant Foot Spearmen, countBy units): empty→Cavalry disabled; +Spearmen→enabled; +Cavalry→disabled; +Spearmen→enabled. Temp rule removed; App.js compiles clean.
 
+## Implemented (2026-06 session, targetProfile array support)
+- `optionalEquipment.targetProfile` now accepts a string OR an array of strings. When an array, the option's points/stats/rules/equipment apply to every named sub-profile (via new `optionTargetsProfile` helper used in `computeUnit`). Single-string behaviour unchanged. The combinedFormation option-hiding rule now hides an option only when ALL of its target sub-profiles are hidden (single string = hide when that one is hidden).
+- Verified live (Load-Army MOCK): Shield `["Spearmen","Archers"]` applied +2 pts/+1 def to both those rows but not Skirmishers; Javelin `"Skirmishers"` (string) applied only to Skirmishers. App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
