@@ -152,6 +152,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - The source sub-unit's `+` is disabled when incrementing would breach the constraint (also enforced as a backstop in `changeSubBases`); the TARGET sub-unit's `−` is never disabled by this rule (its own min/percentage limits still apply). Hidden (combinedFormation) targets are skipped. A `+` tooltip explains the block. A per-card amber warning shows whenever the constraint is currently violated (e.g. after reducing the target): "<name>: must be <label> <ratio>× <target>'s bases (currently X vs <target> Y)."
 - Verified live via a Load-Army import on MOCK data (Archers ≤ 0.5× Spearmen): + disabled at 2/4, unlocks after Spearmen→6, Archers→3 then re-locks; reducing Spearmen to 2 keeps its − free and surfaces the violation warning + Warnings badge.
 
+## Implemented (2026-06 session, hide options for hidden sub-profiles)
+- Bug: unit options whose `targetProfile` matched a sub-profile hidden by the active `combinedFormation` (`disableSubProfiles`) still appeared in the UNIT OPTIONS section.
+- Fix: in the Unit Options render (RosterUnit), compute the `hiddenProfiles` set from `combinedFormation[combinedFormationIndex].disableSubProfiles` and skip any option where `eq.targetProfile` ∈ that set (exact-name match). Reappears when the sub-profile is re-enabled; recomputes immediately on dropdown change (driven by `combinedFormationIndex` state). No points leakage since `computeUnit` already only applies option stats to visible profiles.
+- Verified live (Genghis Khan → Test Army → Combined Formation Spearmen): 25% hides the Bowmen-targeted option; 50% re-shows it and hides Rear-Row-targeted options; switching back reverts instantly.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

@@ -3222,6 +3222,17 @@ function RosterRow({
               </label>
             )}
             {(() => {
+              // Sub-profiles hidden by the current Combined Formation selection —
+              // any option targeting one of these must be hidden too (and reappear
+              // when the profile is re-enabled). Recomputes on every formation change.
+              const cf = inst.combinedFormation;
+              const hiddenProfiles =
+                Array.isArray(cf) && cf.length
+                  ? new Set(
+                      cf[Math.min(inst.combinedFormationIndex || 0, cf.length - 1)]
+                        ?.disableSubProfiles || []
+                    )
+                  : new Set();
               const disabledNames = new Set(
                 inst.optionalEquipment
                   .filter((e) => inst.equipped.includes(e.name))
@@ -3233,6 +3244,8 @@ function RosterRow({
                   .flatMap((e) => e.enableHidden || [])
               );
               return inst.optionalEquipment.map((eq) => {
+                // hidden when its target sub-profile is disabled by the combinedFormation
+                if (eq.targetProfile && hiddenProfiles.has(eq.targetProfile)) return null;
                 // hidden until revealed by a selected item's enableHidden
                 if (eq.hiddenUntilEnabled === "hidden" && !revealedNames.has(eq.name)) return null;
                 const on = inst.equipped.includes(eq.name);
