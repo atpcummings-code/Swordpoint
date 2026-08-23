@@ -161,6 +161,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - New optional `countBy` field on `armyValidation` rules. `countBy: "units"` compares the number of roster unit ENTRIES for the rule's ids (using the existing per-unit `counts` map); omitted or `"bases"` keeps the original base-summing behaviour. Warning message says "units" or "bases" accordingly.
 - Verified live via a temporary MOCK rule (Tenant Cavalry ≤ 1× Tenant Foot Spearmen, countBy units): with 2 cavalry entries (6 bases) + 1 spearmen entry the warning reported "units (2) ... units (1)" — confirming entry counting, not bases. Temp rule removed after verification.
 
+## Implemented (2026-06 session, armyValidation real-time +Add blocking)
+- For `armyValidation` rules with `expression` `lessThanOrEqual`/`lessThan`, the catalog "+ Add" button for every unit in the rule's `ids` is now disabled in real time whenever adding one more would breach the constraint against `compareWith × ratio`; it re-enables as soon as the constraint would hold again (e.g. after adding a `compareWith` unit). Added to the `blockedAddIds` useMemo so it reacts to roster/count changes.
+- Works for both `countBy: "units"` (predicted +1 entry) and default bases (predicted += the unit's starting bases, `max(minBases,1)`). With no compareWith present the ids are blocked (threshold 0), matching the intent.
+- Verified live (temp MOCK rule, Tenant Cavalry ≤ 1× Tenant Foot Spearmen, countBy units): empty→Cavalry disabled; +Spearmen→enabled; +Cavalry→disabled; +Spearmen→enabled. Temp rule removed; App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

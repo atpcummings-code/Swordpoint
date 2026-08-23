@@ -1671,6 +1671,37 @@ function App() {
       const allowed = Math.floor(srcCount / ratio);
       if (tgtCount >= allowed) tgt.forEach((id) => blocked.add(id));
     });
+    // armyValidation (lessThanOrEqual / lessThan): block +Add for the rule's
+    // `ids` when adding one would breach the constraint against `compareWith`
+    // (× ratio). Supports countBy:"units" (entry counts) and default bases.
+    const basesByUnitId = {};
+    roster.forEach((i) => {
+      basesByUnitId[i.unitId] = (basesByUnitId[i.unitId] || 0) + i.bases;
+    });
+    (army?.armyValidation || []).forEach((rule) => {
+      if (!rule || (rule.expression !== "lessThanOrEqual" && rule.expression !== "lessThan"))
+        return;
+      const leftIds = Array.isArray(rule.ids)
+        ? rule.ids
+        : rule.ids
+        ? [rule.ids]
+        : [rule.unitId ?? rule.id].filter(Boolean);
+      if (leftIds.length === 0) return;
+      const ratio = rule.ratio != null ? rule.ratio : 1;
+      const compareWith = asArr(rule.compareWith);
+      const useUnits = rule.countBy === "units";
+      const srcMap = useUnits ? rosterCounts : basesByUnitId;
+      const leftTotal = leftIds.reduce((s, id) => s + (srcMap[id] || 0), 0);
+      const rightSum = compareWith.reduce((s, id) => s + (srcMap[id] || 0), 0);
+      const threshold = rightSum * ratio;
+      const test = rule.expression === "lessThan" ? (a, b) => a < b : (a, b) => a <= b;
+      leftIds.forEach((id) => {
+        const add = useUnits
+          ? 1
+          : Math.max(allUnitDefs.find((u) => u.id === id)?.minBases ?? 0, 1);
+        if (!test(leftTotal + add, threshold)) blocked.add(id);
+      });
+    });
     return blocked;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [army, rosterCounts, roster, excludesByUnitId, allUnitDefs, maxPoints]);
