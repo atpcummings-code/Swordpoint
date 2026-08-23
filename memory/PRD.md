@@ -157,6 +157,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Fix: in the Unit Options render (RosterUnit), compute the `hiddenProfiles` set from `combinedFormation[combinedFormationIndex].disableSubProfiles` and skip any option where `eq.targetProfile` ∈ that set (exact-name match). Reappears when the sub-profile is re-enabled; recomputes immediately on dropdown change (driven by `combinedFormationIndex` state). No points leakage since `computeUnit` already only applies option stats to visible profiles.
 - Verified live (Genghis Khan → Test Army → Combined Formation Spearmen): 25% hides the Bowmen-targeted option; 50% re-shows it and hides Rear-Row-targeted options; switching back reverts instantly.
 
+## Implemented (2026-06 session, armyValidation countBy)
+- New optional `countBy` field on `armyValidation` rules. `countBy: "units"` compares the number of roster unit ENTRIES for the rule's ids (using the existing per-unit `counts` map); omitted or `"bases"` keeps the original base-summing behaviour. Warning message says "units" or "bases" accordingly.
+- Verified live via a temporary MOCK rule (Tenant Cavalry ≤ 1× Tenant Foot Spearmen, countBy units): with 2 cavalry entries (6 bases) + 1 spearmen entry the warning reported "units (2) ... units (1)" — confirming entry counting, not bases. Temp rule removed after verification.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

@@ -2112,15 +2112,19 @@ function App() {
         : rule.compareWith
         ? [rule.compareWith]
         : [];
-      const leftTotal = leftIds.reduce((s, id) => s + (basesByUnit[id] || 0), 0);
-      const rightSum = compareWith.reduce((s, id) => s + (basesByUnit[id] || 0), 0);
+      // countBy: "units" counts roster unit entries; default/"bases" sums bases.
+      const useUnits = rule.countBy === "units";
+      const src = useUnits ? counts : basesByUnit;
+      const unitWord = useUnits ? "units" : "bases";
+      const leftTotal = leftIds.reduce((s, id) => s + (src[id] || 0), 0);
+      const rightSum = compareWith.reduce((s, id) => s + (src[id] || 0), 0);
       if (leftTotal === 0 && rightSum === 0) return;
       const threshold = rightSum * ratio;
       const expr = EXPR[rule.expression];
       if (expr && !expr.test(leftTotal, threshold)) {
         w.push({
           level: "warning",
-          msg: `${leftIds.map((id) => nameOf(id)).join(" + ")} bases (${leftTotal}) must be ${expr.label} ${ratio}× the bases of ${compareWith
+          msg: `${leftIds.map((id) => nameOf(id)).join(" + ")} ${unitWord} (${leftTotal}) must be ${expr.label} ${ratio}× the ${unitWord} of ${compareWith
             .map((id) => nameOf(id))
             .join(" + ")} (${rightSum}) = ${threshold}.`,
         });
