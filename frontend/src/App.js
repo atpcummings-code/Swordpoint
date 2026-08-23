@@ -838,7 +838,7 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     subProfiles: subs,
     combinedFormation: Array.isArray(unit.combinedFormation) && unit.combinedFormation.length ? unit.combinedFormation : null,
     combinedFormationIndex: 0,
-    subBases: hasSubBases ? subs.map((s) => (s.minBases != null ? s.minBases : 1)) : null,
+    subBases: hasSubBases ? subs.map((s) => (s.minBases != null ? s.minBases : 0)) : null,
     // combined-total clamp: main unit min/max if defined, else the sum of sub-unit limits
     combinedMin: hasSubBases ? (unit.minBases != null ? unit.minBases : sumSubMin) : null,
     combinedMax: hasSubBases ? (unit.maxBases != null ? unit.maxBases : sumSubMax) : null,
@@ -987,7 +987,7 @@ function computeUnit(inst) {
     const ptsOptions = sum("pointsModifier");
     const totalPer = ptsBase + ptsOptions;
     // in sub-unit mode each profile has its own base count; otherwise it shares the unit's
-    const pBases = hasSubBases ? (inst.subBases[idx] ?? (sp.minBases ?? 1)) : inst.bases;
+    const pBases = hasSubBases ? (inst.subBases[idx] ?? (sp.minBases ?? 0)) : inst.bases;
     const ptsUnit = totalPer * pBases;
     let pRules = [...sp.specialRules];
     let pEquip = [...sp.baseEquipment];
@@ -1000,6 +1000,7 @@ function computeUnit(inst) {
     return {
       name: sp.name,
       id: sp.id,
+      origIdx: idx,
       onBaseAdded: sp.onBaseAdded,
       attacks,
       defence,
@@ -1355,8 +1356,8 @@ function App() {
       if (!sp) return i;
       const arr = Array.isArray(i.subBases)
         ? [...i.subBases]
-        : subs.map((s) => (s.minBases != null ? s.minBases : 1));
-      const cur = arr[idx] ?? (sp.minBases != null ? sp.minBases : 1);
+        : subs.map((s) => (s.minBases != null ? s.minBases : 0));
+      const cur = arr[idx] ?? (sp.minBases != null ? sp.minBases : 0);
       const lo = sp.minBases ?? 0;
       const hi = sp.maxBases ?? 999;
       let next = Math.min(Math.max(cur + delta, lo), hi);
@@ -3011,7 +3012,7 @@ function RosterRow({
                       data-testid={`sub-bases-minus-${inst.instanceId}-${p.name}`}
                       disabled={subAtMin}
                       title={pctMinBlocked ? `Cannot drop below ${p.minPercentage}% of total bases` : undefined}
-                      onClick={() => onChangeSubBases(inst.instanceId, idx, -1)}
+                      onClick={() => onChangeSubBases(inst.instanceId, p.origIdx, -1)}
                       className="w-7 h-7 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
                     >
                       <Minus size={13} />
@@ -3028,7 +3029,7 @@ function RosterRow({
                       data-testid={`sub-bases-plus-${inst.instanceId}-${p.name}`}
                       disabled={subAtMax}
                       title={pctBlocked ? `Cannot exceed ${p.maxPercentage}% of total bases` : overCombinedMax ? `Combined bases cannot exceed ${calc.subDispMax}` : undefined}
-                      onClick={() => onChangeSubBases(inst.instanceId, idx, 1)}
+                      onClick={() => onChangeSubBases(inst.instanceId, p.origIdx, 1)}
                       className="w-7 h-7 grid place-items-center rounded-md border border-slate-700 bg-slate-800 text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:border-emerald-600"
                     >
                       <Plus size={13} />

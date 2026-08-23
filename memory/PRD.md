@@ -141,6 +141,12 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Fix: `changeSubBases` now builds a `hiddenNames` set from the active `combinedFormation` option's `disableSubProfiles` and excludes those profiles from `sumVisible()`, so the combined-total clamp, maxPercentage cap and minPercentage floor all use the same visible total shown in the UI (matches `computeUnit.mainBases`, which already filters hidden profiles).
 - Status: code fix applied and consistent across handler + render; USER opted to verify the outcome themselves.
 
+## Fixed (2026-06 session, combinedFormation subunit + index bug)
+- Bug (Genghis Khan → Test Army → "Combined Formation Spearmen"/`korean_spearmen_cf`): with the Combined Formation dropdown at 25%, "Mixed Spear/Bowmen" showed 1 base (should be 0) and its + button did nothing.
+- Root cause 1: `makeInstance` initialized `subBases` for sub-profiles WITHOUT a `minBases` key to 1 (`s.minBases != null ? s.minBases : 1`) — but the display/`computeUnit` treat a missing minBases as 0. Fixed the default to 0 in `makeInstance` (line ~841) and the `changeSubBases` fallback (and `computeUnit` pBases fallback).
+- Root cause 2 (the "+ does nothing"): `computeUnit` FILTERS out sub-profiles hidden by the active `combinedFormation` (line ~1032), then the roster render maps the FILTERED `calc.profiles` with a fresh `idx` and passed that to `changeSubBases`, which indexes the FULL `subProfiles`/`subBases` arrays. When an earlier profile is hidden (25% hides "Bowmen", full idx 1), the visible "Mixed" (filtered idx 1) resolved to the hidden "Bowmen" — so the click mutated a hidden profile and nothing changed on screen. Fixed by tagging each profile with `origIdx` (its index in the full subProfiles list) and using `p.origIdx` in the +/- onClick handlers.
+- Verified live: 25% → Mixed 0→1, then Spearmen→6 lets Mixed→2 (2/8=25%); 50% → Bowmen increments correctly. Both index directions confirmed.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
