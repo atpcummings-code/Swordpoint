@@ -174,6 +174,12 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - PDF/print export (`PrintSummary`): (1) removed the unit description row entirely; (2) redesigned the table header into two tight rows — Unit/Category/Bases/Atk/Def/Coh remain single (rowSpan 2); "Pts/Base"→"Points"/"Base", "Pts/Options"→"Points"/"Options", "Total"→"Pts Total"/"Base", trailing "Points"→"Unit"/"Points" (split labels centred); (3) sub-profile units now print the main unit line, then each VISIBLE sub-profile as its own full row in the same columns (bases, A/D/C, per-base points/options/total, unit points), with that sub-profile's own equipment + special rules beneath its name.
 - Verified live (revealed print-summary): descriptions gone, two-row header correct, Over King prints normally, Mixed Foot shows Spearmen + Archers rows with per-row stats and equipment/rules (array-targeted "Large Shield" appears on both). App.js compiles clean.
 
+## Implemented (2026-06 session, PDF export layout tweaks v2)
+- PDF header: kept two-row header; renamed "Pts Total" → "Total"; Unit & Category headers left-aligned, all columns from Bases onward centre-aligned.
+- Column content: Unit & Category cells left-aligned; every other column (Bases/Atk/Def/Coh/per-base points/options/total/unit points) centre-aligned (Unit Points changed from right → centre).
+- Sub-profile rows: keep the 16px indent; below each sub-profile's stats row, Special Rules and Equipment now print as full-width (`colSpan=10`) bold rows in the same "Special Rules: … / Equipment: …" format as non-sub-profile units, flowing across the page.
+- Verified live via revealed print-summary.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
