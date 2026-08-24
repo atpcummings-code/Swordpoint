@@ -170,6 +170,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - `optionalEquipment.targetProfile` now accepts a string OR an array of strings. When an array, the option's points/stats/rules/equipment apply to every named sub-profile (via new `optionTargetsProfile` helper used in `computeUnit`). Single-string behaviour unchanged. The combinedFormation option-hiding rule now hides an option only when ALL of its target sub-profiles are hidden (single string = hide when that one is hidden).
 - Verified live (Load-Army MOCK): Shield `["Spearmen","Archers"]` applied +2 pts/+1 def to both those rows but not Skirmishers; Javelin `"Skirmishers"` (string) applied only to Skirmishers. App.js compiles clean.
 
+## Implemented (2026-06 session, PDF export layout redesign)
+- PDF/print export (`PrintSummary`): (1) removed the unit description row entirely; (2) redesigned the table header into two tight rows — Unit/Category/Bases/Atk/Def/Coh remain single (rowSpan 2); "Pts/Base"→"Points"/"Base", "Pts/Options"→"Points"/"Options", "Total"→"Pts Total"/"Base", trailing "Points"→"Unit"/"Points" (split labels centred); (3) sub-profile units now print the main unit line, then each VISIBLE sub-profile as its own full row in the same columns (bases, A/D/C, per-base points/options/total, unit points), with that sub-profile's own equipment + special rules beneath its name.
+- Verified live (revealed print-summary): descriptions gone, two-row header correct, Over King prints normally, Mixed Foot shows Spearmen + Archers rows with per-row stats and equipment/rules (array-targeted "Large Shield" appears on both). App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

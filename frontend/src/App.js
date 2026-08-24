@@ -3530,17 +3530,23 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
 
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
         <thead>
+          <tr style={{ textAlign: "left" }}>
+            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom" }}>Unit</th>
+            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom" }}>Category</th>
+            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom" }}>Bases</th>
+            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom" }}>Atk</th>
+            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom" }}>Def</th>
+            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom" }}>Coh</th>
+            <th style={{ padding: "4px 4px 0", textAlign: "center" }}>Points</th>
+            <th style={{ padding: "4px 4px 0", textAlign: "center" }}>Points</th>
+            <th style={{ padding: "4px 4px 0", textAlign: "center" }}>Pts Total</th>
+            <th style={{ padding: "4px 4px 0", textAlign: "right" }}>Unit</th>
+          </tr>
           <tr style={{ borderBottom: "2px solid #0f172a", textAlign: "left" }}>
-            <th style={{ padding: "4px" }}>Unit</th>
-            <th style={{ padding: "4px" }}>Category</th>
-            <th style={{ padding: "4px" }}>Bases</th>
-            <th style={{ padding: "4px" }}>Atk</th>
-            <th style={{ padding: "4px" }}>Def</th>
-            <th style={{ padding: "4px" }}>Coh</th>
-            <th style={{ padding: "4px" }}>Pts/Base</th>
-            <th style={{ padding: "4px" }}>Pts/Options</th>
-            <th style={{ padding: "4px" }}>Total</th>
-            <th style={{ padding: "4px", textAlign: "right" }}>Points</th>
+            <th style={{ padding: "0 4px 4px", textAlign: "center" }}>Base</th>
+            <th style={{ padding: "0 4px 4px", textAlign: "center" }}>Options</th>
+            <th style={{ padding: "0 4px 4px", textAlign: "center" }}>Base</th>
+            <th style={{ padding: "0 4px 4px", textAlign: "right" }}>Points</th>
           </tr>
         </thead>
         <tbody>
@@ -3557,36 +3563,33 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
                   <td style={{ padding: "4px 4px 1px" }}>{hasProfiles ? "-" : isCommander ? inst.attacks ?? "-" : "-"}</td>
                   <td style={{ padding: "4px 4px 1px" }}>{hasProfiles ? "-" : calc.defence ?? "-"}</td>
                   <td style={{ padding: "4px 4px 1px" }}>{hasProfiles ? "-" : calc.cohesion ?? "-"}</td>
-                  <td style={{ padding: "4px 4px 1px" }}>{calc.hasSubBases ? "–" : calc.ppbBase}</td>
-                  <td style={{ padding: "4px 4px 1px" }}>{calc.hasSubBases ? "–" : calc.ppbOptions}</td>
-                  <td style={{ padding: "4px 4px 1px" }}>{calc.hasSubBases ? "–" : calc.ppbTotal}</td>
+                  <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbBase}</td>
+                  <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbOptions}</td>
+                  <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbTotal}</td>
                   <td style={{ padding: "4px 4px 1px", textAlign: "right", fontWeight: 600 }}>{calc.total}</td>
-                </tr>
-                <tr>
-                  <td colSpan={10} style={{ padding: "0 4px 3px", fontStyle: "italic", color: "#475569", fontSize: "11px" }}>
-                    {inst.description || "-"}
-                  </td>
                 </tr>
                 {hasProfiles &&
                   calc.profiles.map((p) => (
-                    <tr key={`pdf-${inst.instanceId}-${p.name}`}>
-                      <td colSpan={10} style={{ padding: "0 4px 3px", fontSize: "11px", color: "#0f172a" }}>
-                        <strong>{p.name}:</strong>{" "}
-                        {[
-                          p.attacks != null ? `A ${p.attacks}` : null,
-                          p.defence != null ? `D ${p.defence}` : null,
-                          p.cohesion != null ? `C ${p.cohesion}` : null,
-                          calc.hasSubBases ? `Bases ${p.bases}` : null,
-                          `Pts/Base ${p.ptsBase}`,
-                          `Pts/Options ${p.ptsOptions}`,
-                          `Total ${p.total}`,
-                          `Points ${p.ptsUnit}`,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                        {p.equipment.length > 0 ? ` — ${p.equipment.join(", ")}` : ""}
-                        {p.rules.length > 0 ? ` [${p.rules.join(", ")}]` : ""}
+                    <tr key={`pdf-${inst.instanceId}-${p.name}`} style={{ verticalAlign: "top" }}>
+                      <td style={{ padding: "0 4px 2px 16px" }}>
+                        <span style={{ fontWeight: 600 }}>{p.name}</span>
+                        {(p.equipment.length > 0 || p.rules.length > 0) && (
+                          <div style={{ fontSize: "10px", color: "#334155" }}>
+                            {p.equipment.length > 0 ? p.equipment.join(", ") : ""}
+                            {p.equipment.length > 0 && p.rules.length > 0 ? " · " : ""}
+                            {p.rules.length > 0 ? `[${p.rules.join(", ")}]` : ""}
+                          </div>
+                        )}
                       </td>
+                      <td style={{ padding: "0 4px 2px" }} />
+                      <td style={{ padding: "0 4px 2px" }}>{calc.hasSubBases ? p.bases : "-"}</td>
+                      <td style={{ padding: "0 4px 2px" }}>{p.attacks ?? "-"}</td>
+                      <td style={{ padding: "0 4px 2px" }}>{p.defence ?? "-"}</td>
+                      <td style={{ padding: "0 4px 2px" }}>{p.cohesion ?? "-"}</td>
+                      <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.ptsBase}</td>
+                      <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.ptsOptions}</td>
+                      <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.total}</td>
+                      <td style={{ padding: "0 4px 2px", textAlign: "right" }}>{p.ptsUnit}</td>
                     </tr>
                   ))}
                 {!hasProfiles && calc.rules.length > 0 && (
