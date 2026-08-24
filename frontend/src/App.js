@@ -3516,6 +3516,96 @@ function IconBtn({ children, onClick, disabled, danger, title, testid }) {
 }
 
 function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warnings, categoryReport = [] }) {
+  const renderUnitRows = ({ inst, calc }) => {
+    const isCommander = isCommanderCat(inst.categoryId) || inst.type === "General";
+    const combinedEquipment = calc.equipment;
+    const hasProfiles = calc.profiles?.length > 0;
+    return (
+      <React.Fragment key={inst.instanceId}>
+        <tr style={{ verticalAlign: "top" }}>
+          <td style={{ padding: "4px 4px 1px", fontWeight: 600, textAlign: "left" }}>{inst.name}</td>
+          <td style={{ padding: "4px 4px 1px", textAlign: "left" }}>{inst.categoryId}</td>
+          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.mainBases}</td>
+          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{hasProfiles ? "-" : isCommander ? inst.attacks ?? "-" : "-"}</td>
+          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{hasProfiles ? "-" : calc.defence ?? "-"}</td>
+          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{hasProfiles ? "-" : calc.cohesion ?? "-"}</td>
+          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbBase}</td>
+          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbOptions}</td>
+          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbTotal}</td>
+          <td style={{ padding: "4px 4px 1px", textAlign: "center", fontWeight: 600 }}>{calc.total}</td>
+        </tr>
+        {hasProfiles &&
+          calc.profiles.map((p) => (
+            <React.Fragment key={`pdf-${inst.instanceId}-${p.name}`}>
+              <tr style={{ verticalAlign: "top" }}>
+                <td style={{ padding: "0 4px 2px 16px", fontWeight: 600, textAlign: "left" }}>{p.name}</td>
+                <td style={{ padding: "0 4px 2px" }} />
+                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{calc.hasSubBases ? p.bases : "-"}</td>
+                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.attacks ?? "-"}</td>
+                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.defence ?? "-"}</td>
+                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.cohesion ?? "-"}</td>
+                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.ptsBase}</td>
+                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.ptsOptions}</td>
+                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.total}</td>
+                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.ptsUnit}</td>
+              </tr>
+              {p.rules.length > 0 && (
+                <tr>
+                  <td colSpan={10} style={{ padding: "0 4px 2px 16px", fontSize: "11px", color: "#0f172a" }}>
+                    <strong>Special Rules:</strong> {p.rules.join(", ")}
+                  </td>
+                </tr>
+              )}
+              {p.equipment.length > 0 && (
+                <tr>
+                  <td colSpan={10} style={{ padding: "0 4px 3px 16px", fontSize: "11px", color: "#0f172a" }}>
+                    <strong>Equipment:</strong> {p.equipment.join(", ")}
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
+          ))}
+        {!hasProfiles && calc.rules.length > 0 && (
+          <tr>
+            <td colSpan={10} style={{ padding: "0 4px 3px", fontSize: "11px", color: "#0f172a" }}>
+              <strong>Special Rules:</strong> {calc.rules.join(", ")}
+            </td>
+          </tr>
+        )}
+        {!hasProfiles && combinedEquipment.length > 0 && (
+          <tr>
+            <td colSpan={10} style={{ padding: "0 4px 5px", fontSize: "11px", color: "#0f172a" }}>
+              <strong>Equipment:</strong> {combinedEquipment.join(", ")}
+            </td>
+          </tr>
+        )}
+        <tr style={{ borderBottom: "1px solid #cbd5e1" }}>
+          <td colSpan={10} style={{ padding: 0 }} />
+        </tr>
+      </React.Fragment>
+    );
+  };
+
+  // Group units by category, in the army-validation-report order; drop empty
+  // categories. Any unit whose categoryId isn't in the report is appended after.
+  const nameById = {};
+  categoryReport.forEach((r) => (nameById[r.id] = r.name));
+  const groups = [];
+  const seen = new Set();
+  categoryReport.forEach((r) => {
+    const units = computed.filter((c) => c.inst.categoryId === r.id);
+    if (units.length) {
+      groups.push({ id: r.id, name: r.name, units });
+      seen.add(r.id);
+    }
+  });
+  computed.forEach((c) => {
+    const id = c.inst.categoryId;
+    if (seen.has(id)) return;
+    seen.add(id);
+    groups.push({ id, name: nameById[id] || id, units: computed.filter((x) => x.inst.categoryId === id) });
+  });
+
   return (
     <div className="print-summary" data-testid="print-summary">
       <h1 style={{ fontFamily: "Cinzel, serif", fontSize: "22px", marginBottom: "2px" }}>
@@ -3550,75 +3640,28 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
           </tr>
         </thead>
         <tbody>
-          {computed.map(({ inst, calc }) => {
-            const isCommander = isCommanderCat(inst.categoryId) || inst.type === "General";
-            const combinedEquipment = calc.equipment;
-            const hasProfiles = calc.profiles?.length > 0;
-            return (
-              <React.Fragment key={inst.instanceId}>
-                <tr style={{ verticalAlign: "top" }}>
-                  <td style={{ padding: "4px 4px 1px", fontWeight: 600, textAlign: "left" }}>{inst.name}</td>
-                  <td style={{ padding: "4px 4px 1px", textAlign: "left" }}>{inst.categoryId}</td>
-                  <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.mainBases}</td>
-                  <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{hasProfiles ? "-" : isCommander ? inst.attacks ?? "-" : "-"}</td>
-                  <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{hasProfiles ? "-" : calc.defence ?? "-"}</td>
-                  <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{hasProfiles ? "-" : calc.cohesion ?? "-"}</td>
-                  <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbBase}</td>
-                  <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbOptions}</td>
-                  <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbTotal}</td>
-                  <td style={{ padding: "4px 4px 1px", textAlign: "center", fontWeight: 600 }}>{calc.total}</td>
-                </tr>
-                {hasProfiles &&
-                  calc.profiles.map((p) => (
-                    <React.Fragment key={`pdf-${inst.instanceId}-${p.name}`}>
-                      <tr style={{ verticalAlign: "top" }}>
-                        <td style={{ padding: "0 4px 2px 16px", fontWeight: 600, textAlign: "left" }}>{p.name}</td>
-                        <td style={{ padding: "0 4px 2px" }} />
-                        <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{calc.hasSubBases ? p.bases : "-"}</td>
-                        <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.attacks ?? "-"}</td>
-                        <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.defence ?? "-"}</td>
-                        <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.cohesion ?? "-"}</td>
-                        <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.ptsBase}</td>
-                        <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.ptsOptions}</td>
-                        <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.total}</td>
-                        <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.ptsUnit}</td>
-                      </tr>
-                      {p.rules.length > 0 && (
-                        <tr>
-                          <td colSpan={10} style={{ padding: "0 4px 2px 16px", fontSize: "11px", color: "#0f172a" }}>
-                            <strong>Special Rules:</strong> {p.rules.join(", ")}
-                          </td>
-                        </tr>
-                      )}
-                      {p.equipment.length > 0 && (
-                        <tr>
-                          <td colSpan={10} style={{ padding: "0 4px 3px 16px", fontSize: "11px", color: "#0f172a" }}>
-                            <strong>Equipment:</strong> {p.equipment.join(", ")}
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  ))}
-                {!hasProfiles && calc.rules.length > 0 && (
-                  <tr>
-                    <td colSpan={10} style={{ padding: "0 4px 3px", fontSize: "11px", color: "#0f172a" }}>
-                      <strong>Special Rules:</strong> {calc.rules.join(", ")}
-                    </td>
-                  </tr>
-                )}
-                {!hasProfiles && combinedEquipment.length > 0 && (
-                  <tr>
-                    <td colSpan={10} style={{ padding: "0 4px 5px", fontSize: "11px", color: "#0f172a" }}>
-                      <strong>Equipment:</strong> {combinedEquipment.join(", ")}
-                    </td>
-                  </tr>
-                )}
-                <tr style={{ borderBottom: "1px solid #cbd5e1" }}>
-                  <td colSpan={10} style={{ padding: 0 }} />
-                </tr>
-              </React.Fragment>
-            );
-          })}
+          {groups.map((group) => (
+            <React.Fragment key={`grp-${group.id}`}>
+              <tr>
+                <td
+                  colSpan={10}
+                  style={{
+                    padding: "8px 4px 2px",
+                    fontFamily: "Cinzel, serif",
+                    fontWeight: 700,
+                    fontSize: "13px",
+                    color: "#0f172a",
+                    borderBottom: "1px solid #94a3b8",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {group.name}
+                </td>
+              </tr>
+              {group.units.map((u) => renderUnitRows(u))}
+            </React.Fragment>
+          ))}
         </tbody>
       </table>
 

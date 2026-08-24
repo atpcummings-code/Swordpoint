@@ -180,6 +180,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Sub-profile rows: keep the 16px indent; below each sub-profile's stats row, Special Rules and Equipment now print as full-width (`colSpan=10`) bold rows in the same "Special Rules: … / Equipment: …" format as non-sub-profile units, flowing across the page.
 - Verified live via revealed print-summary.
 
+## Implemented (2026-06 session, PDF category grouping)
+- PDF export now groups units by category, in the same order as the Army Validation Report (`categoryReport`), with an uppercase bold category-name header row above each group. Empty categories render no header/rows. Units with a categoryId not present in the report are appended in a trailing group under that id. Extracted `renderUnitRows` helper in `PrintSummary` and iterate `groups` in the tbody.
+- Verified live: Commanders group (Over King) then Tenants group (Mixed Foot + sub-profiles, Tenant Cavalry) in report order; empty categories omitted from the unit table.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
