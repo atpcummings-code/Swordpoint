@@ -652,6 +652,33 @@ const uid = () =>
 
 const isSkirmRule = (r) => /skirmish/i.test(String(r));
 
+/* Army Break Point — per-unit Break Points (BP). Only ACTIVE (toggled-on)
+   rules are considered. The Open/Close Order/Wagon, Skirmisher, and Artillery
+   categories are mutually exclusive in practice, so the first match wins. */
+function unitBreakPoints(inst, calc) {
+  const activeRules = new Set(
+    [
+      ...(calc.rules || []),
+      ...((calc.profiles || []).flatMap((p) => p.rules || [])),
+    ].map((r) => String(r).trim().toLowerCase())
+  );
+  const has = (name) => activeRules.has(name.toLowerCase());
+  const pts = calc.total;
+  const bases = calc.mainBases;
+  if (has("Open Order") || has("Close Order") || has("Wagon") || has("Wagon Tabor")) {
+    return pts <= 150 ? 2 : 3;
+  }
+  if (calc.isSkirm && bases >= 4) return 1;
+  const type = String(inst.type || "").trim().toLowerCase();
+  if (
+    ["light artillery", "multi-barrelled artillery", "mortars"].includes(type) &&
+    bases >= 2
+  ) {
+    return pts <= 150 ? 2 : 3;
+  }
+  return 0;
+}
+
 /* Drop any equipped option that is hidden and no longer revealed by another
    equipped option (cascades). Used when a reveal source is deselected. */
 function pruneHidden(optionalEquipment, equipped) {
@@ -1575,6 +1602,12 @@ function App() {
     [roster]
   );
   const totalPoints = computed.reduce((s, c) => s + c.calc.total, 0);
+  const totalBreakPoints = computed.reduce(
+    (s, c) => s + unitBreakPoints(c.inst, c.calc),
+    0
+  );
+  const armyBreakPoint = Math.floor(totalBreakPoints / 2);
+  const breakPointsToBreak = totalBreakPoints - armyBreakPoint;
 
   /* Count how many roster instances of each unit id have each equipment applied */
   const equipUsage = useMemo(() => {    const m = {};
@@ -2406,7 +2439,7 @@ function App() {
             <div
               data-testid="header-roster-summary"
               aria-hidden={!army}
-              className={`rounded-xl border-2 border-emerald-400 p-3 backdrop-blur bg-slate-950/90 w-[360px] shrink-0 flex flex-col justify-between ${
+              className={`rounded-xl border-2 border-emerald-400 p-3 backdrop-blur bg-slate-950/90 w-[460px] shrink-0 flex flex-col justify-between ${
                 army ? "" : "invisible pointer-events-none"
               }`}
             >
@@ -2434,6 +2467,24 @@ function App() {
                       onChange={(e) => setMaxPoints(Math.max(0, Number(e.target.value) || 0))}
                       className="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 w-28 font-cond text-lg text-slate-100 text-center focus:outline-none focus:border-emerald-500"
                     />
+                  </div>
+
+                  <div
+                    data-testid="army-break-point"
+                    className="flex flex-col gap-0.5 font-cond text-[11px] text-slate-300"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="uppercase tracking-widest text-slate-400">Total Break Points</span>
+                      <span data-testid="total-break-points" className="font-display text-sm font-bold text-slate-100">{totalBreakPoints}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="uppercase tracking-widest text-slate-400">Army Break Point</span>
+                      <span data-testid="army-break-point-value" className="font-display text-sm font-bold text-emerald-400">{armyBreakPoint}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="uppercase tracking-widest text-slate-400">Break Points to Army Break</span>
+                      <span data-testid="break-points-to-break" className="font-display text-sm font-bold text-slate-100">{breakPointsToBreak}</span>
+                    </div>
                   </div>
 
                   <div className="flex flex-col items-center">
@@ -2847,6 +2898,7 @@ function RosterRow({
       : null;
   const atMin = inst.bases <= (calc.effMin || 1);
   const atMax = inst.bases >= calc.effMax;
+  const bp = unitBreakPoints(inst, calc);
 
   const requireWarnings = [];
   (inst.requires || []).forEach((r) => {
@@ -3052,6 +3104,7 @@ function RosterRow({
               <Stat label="C" value={calc.cohesion ?? "-"} w testid={`unit-cohesion-${inst.instanceId}`} />
             </>
           )}
+          <Stat label="BP" value={bp} w testid={`unit-bp-${inst.instanceId}`} />
           <Stat label="Pts/Unit" value={calc.total} big w testid={`unit-total-${inst.instanceId}`} />
         </div>
       </div>
@@ -3150,6 +3203,7 @@ function RosterRow({
                     <Stat label="D" value={p.defence ?? "-"} w sm testid={`subprofile-defence-${inst.instanceId}-${p.name}`} />
                   )}
                   <Stat label="C" value={p.cohesion ?? "-"} w sm testid={`subprofile-cohesion-${inst.instanceId}-${p.name}`} />
+                  <Stat label="BP" value={"\u00A0"} w sm testid={`subprofile-bp-${inst.instanceId}-${p.name}`} />
                   <Stat label="Pts/Unit" value={p.ptsUnit} big w sm testid={`subprofile-pts-unit-${inst.instanceId}-${p.name}`} />
                 </div>
               </div>
@@ -3485,7 +3539,7 @@ function Stat({ label, value, big, testid, w, sm }) {
   const sizeCls = sm ? "text-[0.9rem]" : big ? "text-2xl" : "text-lg";
   const styleCls = big ? "font-extrabold text-emerald-400" : "font-bold text-slate-200";
   return (
-    <div className={`text-center ${w ? "w-[68px] shrink-0" : ""}`}>
+    <div className={`text-center ${w ? "w-[56px] shrink-0" : ""}`}>
       <div className="font-cond text-[10px] uppercase tracking-widest text-slate-500 mb-0.5">{label}</div>
       <div
         data-testid={testid}

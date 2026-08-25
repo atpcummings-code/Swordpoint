@@ -184,6 +184,13 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - PDF export now groups units by category, in the same order as the Army Validation Report (`categoryReport`), with an uppercase bold category-name header row above each group. Empty categories render no header/rows. Units with a categoryId not present in the report are appended in a trailing group under that id. Extracted `renderUnitRows` helper in `PrintSummary` and iterate `groups` in the tbody.
 - Verified live: Commanders group (Over King) then Tenants group (Mixed Foot + sub-profiles, Tenant Cavalry) in report order; empty categories omitted from the unit table.
 
+## Implemented (2026-06 session, Army Break Point / BP)
+- New per-unit Break Points via `unitBreakPoints(inst, calc)` (module-level). Only ACTIVE (toggled-on) rules count (base special rules + equipped-option rules + visible sub-profile rules). Categories are mutually exclusive so first-match cascade: (1) has Open Order/Close Order/Wagon/Wagon Tabor → 2 BP if PTS/Unit ≤150 else 3; (2) Skirmishers (calc.isSkirm) AND bases ≥4 → 1; (3) type Light Artillery/Multi-barrelled Artillery/Mortars AND bases ≥2 → 2 if ≤150 else 3; else 0.
+- Army totals in App: `totalBreakPoints` = sum of unit BP; `armyBreakPoint` = floor(sum/2); `breakPointsToBreak` = sum − armyBreakPoint.
+- Unit card: added a "BP" `Stat` column between C and PTS/UNIT (main row shows the value; sub-profile rows reserve the column with a blank). Narrowed `Stat` width 68→56px so the extra column fits without overflow (applies to all card stat columns consistently).
+- Roster Summary: added Total Break Points / Army Break Point / Break Points to Army Break between Max Points Limit and Total/Limit; widened the summary box 360→460px.
+- Verified live via Load-Army: Close Order≤150→2, Open Order>150→3, Skirmish(4)→1, Light Artillery(2)→2, plain→0, sub-profile(Open Order)→2 (blank on sub rows); summary 10/5/5. No card overflow.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
