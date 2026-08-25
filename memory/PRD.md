@@ -202,6 +202,12 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Break Points block centred: summary row now has three direct `justify-between` children (Max Points | BP block | Total/Limit), all `shrink-0`, giving approximately equal left/right spacing around the centred BP block; three rows stay aligned (fixed block + value widths).
 - Verified live: before/after adding units, bp-block (x1195.5,w236), total-points (x1485,w137) and value spans (w28) unchanged; values 4/2/2, total 100/1000.
 
+## Implemented (2026-06 session, PDF export v3)
+- PDF columns now: Unit | Category | Atk | Def | Coh | Bases | Points/Base | Points/Options | Total/Base | BP | Unit Points (11 cols). Added BP column between Total/Base and Unit Points (value on main row, blank on sub-profile rows); moved Bases to between Coh and Points/Base.
+- Header block adds a Break Points row (Total Break Points · Break Points to Army Break · Army Break Point) and a "Supplement name: <name>" line below the army name (same 12px style as Total Points); PrintSummary now receives `totalBreakPoints/armyBreakPoint/breakPointsToBreak/supplementName` (supplement from `data.supplement`).
+- Tightened padding: stat-header rows (2px), and the Special Rules ↔ Equipment rows on both unit and sub-profile (near-zero inter-row gap). Atk/Def/Coh values bolded on unit and sub-profile name rows.
+- Verified live via revealed print-summary.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

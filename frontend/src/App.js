@@ -2635,6 +2635,10 @@ function App() {
         isValid={isValid}
         warnings={warnings}
         categoryReport={categoryReport}
+        totalBreakPoints={totalBreakPoints}
+        armyBreakPoint={armyBreakPoint}
+        breakPointsToBreak={breakPointsToBreak}
+        supplementName={data?.supplement || ""}
       />
     </div>
   );
@@ -3569,50 +3573,54 @@ function IconBtn({ children, onClick, disabled, danger, title, testid }) {
   );
 }
 
-function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warnings, categoryReport = [] }) {
+function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warnings, categoryReport = [], totalBreakPoints = 0, armyBreakPoint = 0, breakPointsToBreak = 0, supplementName = "" }) {
   const renderUnitRows = ({ inst, calc }) => {
     const isCommander = isCommanderCat(inst.categoryId) || inst.type === "General";
     const combinedEquipment = calc.equipment;
     const hasProfiles = calc.profiles?.length > 0;
+    const bp = unitBreakPoints(inst, calc);
+    const boldC = { padding: "3px 4px 0", textAlign: "center", fontWeight: 700 };
     return (
       <React.Fragment key={inst.instanceId}>
         <tr style={{ verticalAlign: "top" }}>
-          <td style={{ padding: "4px 4px 1px", fontWeight: 600, textAlign: "left" }}>{inst.name}</td>
-          <td style={{ padding: "4px 4px 1px", textAlign: "left" }}>{inst.categoryId}</td>
-          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.mainBases}</td>
-          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{hasProfiles ? "-" : isCommander ? inst.attacks ?? "-" : "-"}</td>
-          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{hasProfiles ? "-" : calc.defence ?? "-"}</td>
-          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{hasProfiles ? "-" : calc.cohesion ?? "-"}</td>
-          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbBase}</td>
-          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbOptions}</td>
-          <td style={{ padding: "4px 4px 1px", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbTotal}</td>
-          <td style={{ padding: "4px 4px 1px", textAlign: "center", fontWeight: 600 }}>{calc.total}</td>
+          <td style={{ padding: "3px 4px 0", fontWeight: 600, textAlign: "left" }}>{inst.name}</td>
+          <td style={{ padding: "3px 4px 0", textAlign: "left" }}>{inst.categoryId}</td>
+          <td style={boldC}>{hasProfiles ? "-" : isCommander ? inst.attacks ?? "-" : "-"}</td>
+          <td style={boldC}>{hasProfiles ? "-" : calc.defence ?? "-"}</td>
+          <td style={boldC}>{hasProfiles ? "-" : calc.cohesion ?? "-"}</td>
+          <td style={{ padding: "3px 4px 0", textAlign: "center" }}>{calc.mainBases}</td>
+          <td style={{ padding: "3px 4px 0", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbBase}</td>
+          <td style={{ padding: "3px 4px 0", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbOptions}</td>
+          <td style={{ padding: "3px 4px 0", textAlign: "center" }}>{calc.hasSubBases ? "–" : calc.ppbTotal}</td>
+          <td style={{ padding: "3px 4px 0", textAlign: "center" }}>{bp}</td>
+          <td style={{ padding: "3px 4px 0", textAlign: "center", fontWeight: 600 }}>{calc.total}</td>
         </tr>
         {hasProfiles &&
           calc.profiles.map((p) => (
             <React.Fragment key={`pdf-${inst.instanceId}-${p.name}`}>
               <tr style={{ verticalAlign: "top" }}>
-                <td style={{ padding: "0 4px 2px 16px", fontWeight: 600, textAlign: "left" }}>{p.name}</td>
-                <td style={{ padding: "0 4px 2px" }} />
-                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{calc.hasSubBases ? p.bases : "-"}</td>
-                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.attacks ?? "-"}</td>
-                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.defence ?? "-"}</td>
-                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.cohesion ?? "-"}</td>
-                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.ptsBase}</td>
-                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.ptsOptions}</td>
-                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.total}</td>
-                <td style={{ padding: "0 4px 2px", textAlign: "center" }}>{p.ptsUnit}</td>
+                <td style={{ padding: "0 4px 0 16px", fontWeight: 600, textAlign: "left" }}>{p.name}</td>
+                <td style={{ padding: "0 4px" }} />
+                <td style={{ padding: "0 4px", textAlign: "center", fontWeight: 700 }}>{p.attacks ?? "-"}</td>
+                <td style={{ padding: "0 4px", textAlign: "center", fontWeight: 700 }}>{p.defence ?? "-"}</td>
+                <td style={{ padding: "0 4px", textAlign: "center", fontWeight: 700 }}>{p.cohesion ?? "-"}</td>
+                <td style={{ padding: "0 4px", textAlign: "center" }}>{calc.hasSubBases ? p.bases : "-"}</td>
+                <td style={{ padding: "0 4px", textAlign: "center" }}>{p.ptsBase}</td>
+                <td style={{ padding: "0 4px", textAlign: "center" }}>{p.ptsOptions}</td>
+                <td style={{ padding: "0 4px", textAlign: "center" }}>{p.total}</td>
+                <td style={{ padding: "0 4px", textAlign: "center" }}>{"\u00A0"}</td>
+                <td style={{ padding: "0 4px", textAlign: "center" }}>{p.ptsUnit}</td>
               </tr>
               {p.rules.length > 0 && (
                 <tr>
-                  <td colSpan={10} style={{ padding: "0 4px 2px 16px", fontSize: "11px", color: "#0f172a" }}>
+                  <td colSpan={11} style={{ padding: "0 4px 0 16px", fontSize: "11px", color: "#0f172a" }}>
                     <strong>Special Rules:</strong> {p.rules.join(", ")}
                   </td>
                 </tr>
               )}
               {p.equipment.length > 0 && (
                 <tr>
-                  <td colSpan={10} style={{ padding: "0 4px 3px 16px", fontSize: "11px", color: "#0f172a" }}>
+                  <td colSpan={11} style={{ padding: "0 4px 1px 16px", fontSize: "11px", color: "#0f172a" }}>
                     <strong>Equipment:</strong> {p.equipment.join(", ")}
                   </td>
                 </tr>
@@ -3621,20 +3629,20 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
           ))}
         {!hasProfiles && calc.rules.length > 0 && (
           <tr>
-            <td colSpan={10} style={{ padding: "0 4px 3px", fontSize: "11px", color: "#0f172a" }}>
+            <td colSpan={11} style={{ padding: "0 4px 0", fontSize: "11px", color: "#0f172a" }}>
               <strong>Special Rules:</strong> {calc.rules.join(", ")}
             </td>
           </tr>
         )}
         {!hasProfiles && combinedEquipment.length > 0 && (
           <tr>
-            <td colSpan={10} style={{ padding: "0 4px 5px", fontSize: "11px", color: "#0f172a" }}>
+            <td colSpan={11} style={{ padding: "0 4px 2px", fontSize: "11px", color: "#0f172a" }}>
               <strong>Equipment:</strong> {combinedEquipment.join(", ")}
             </td>
           </tr>
         )}
         <tr style={{ borderBottom: "1px solid #cbd5e1" }}>
-          <td colSpan={10} style={{ padding: 0 }} />
+          <td colSpan={11} style={{ padding: 0 }} />
         </tr>
       </React.Fragment>
     );
@@ -3665,32 +3673,43 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
       <h1 style={{ fontFamily: "Cinzel, serif", fontSize: "22px", marginBottom: "2px" }}>
         {army?.armyName || "Army Roster"}
       </h1>
-      <div style={{ fontSize: "12px", marginBottom: "10px" }}>
+      {supplementName ? (
+        <div style={{ fontSize: "12px", marginBottom: "2px" }}>
+          Supplement name: <strong>{supplementName}</strong>
+        </div>
+      ) : null}
+      <div style={{ fontSize: "12px", marginBottom: "2px" }}>
         Total Points: <strong>{totalPoints}</strong> / {maxPoints} &nbsp;·&nbsp; Status:{" "}
         <strong style={{ color: isValid ? "#059669" : "#b45309" }}>
           {isValid ? "VALID" : "WARNINGS PRESENT"}
         </strong>
       </div>
+      <div style={{ fontSize: "12px", marginBottom: "10px" }}>
+        Total Break Points: <strong>{totalBreakPoints}</strong> &nbsp;·&nbsp; Break Points to Army
+        Break: <strong>{breakPointsToBreak}</strong> &nbsp;·&nbsp; Army Break Point:{" "}
+        <strong>{armyBreakPoint}</strong>
+      </div>
 
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
         <thead>
           <tr>
-            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom", textAlign: "left" }}>Unit</th>
-            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom", textAlign: "left" }}>Category</th>
-            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom", textAlign: "center" }}>Bases</th>
-            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom", textAlign: "center" }}>Atk</th>
-            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom", textAlign: "center" }}>Def</th>
-            <th rowSpan={2} style={{ padding: "4px", verticalAlign: "bottom", textAlign: "center" }}>Coh</th>
-            <th style={{ padding: "4px 4px 0", textAlign: "center" }}>Points</th>
-            <th style={{ padding: "4px 4px 0", textAlign: "center" }}>Points</th>
-            <th style={{ padding: "4px 4px 0", textAlign: "center" }}>Total</th>
-            <th style={{ padding: "4px 4px 0", textAlign: "center" }}>Unit</th>
+            <th rowSpan={2} style={{ padding: "2px 4px", verticalAlign: "bottom", textAlign: "left" }}>Unit</th>
+            <th rowSpan={2} style={{ padding: "2px 4px", verticalAlign: "bottom", textAlign: "left" }}>Category</th>
+            <th rowSpan={2} style={{ padding: "2px 4px", verticalAlign: "bottom", textAlign: "center" }}>Atk</th>
+            <th rowSpan={2} style={{ padding: "2px 4px", verticalAlign: "bottom", textAlign: "center" }}>Def</th>
+            <th rowSpan={2} style={{ padding: "2px 4px", verticalAlign: "bottom", textAlign: "center" }}>Coh</th>
+            <th rowSpan={2} style={{ padding: "2px 4px", verticalAlign: "bottom", textAlign: "center" }}>Bases</th>
+            <th style={{ padding: "2px 4px 0", textAlign: "center" }}>Points</th>
+            <th style={{ padding: "2px 4px 0", textAlign: "center" }}>Points</th>
+            <th style={{ padding: "2px 4px 0", textAlign: "center" }}>Total</th>
+            <th rowSpan={2} style={{ padding: "2px 4px", verticalAlign: "bottom", textAlign: "center" }}>BP</th>
+            <th style={{ padding: "2px 4px 0", textAlign: "center" }}>Unit</th>
           </tr>
           <tr style={{ borderBottom: "2px solid #0f172a" }}>
-            <th style={{ padding: "0 4px 4px", textAlign: "center" }}>Base</th>
-            <th style={{ padding: "0 4px 4px", textAlign: "center" }}>Options</th>
-            <th style={{ padding: "0 4px 4px", textAlign: "center" }}>Base</th>
-            <th style={{ padding: "0 4px 4px", textAlign: "center" }}>Points</th>
+            <th style={{ padding: "0 4px 2px", textAlign: "center" }}>Base</th>
+            <th style={{ padding: "0 4px 2px", textAlign: "center" }}>Options</th>
+            <th style={{ padding: "0 4px 2px", textAlign: "center" }}>Base</th>
+            <th style={{ padding: "0 4px 2px", textAlign: "center" }}>Points</th>
           </tr>
         </thead>
         <tbody>
@@ -3698,7 +3717,7 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
             <React.Fragment key={`grp-${group.id}`}>
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   style={{
                     padding: "8px 4px 2px",
                     fontFamily: "Cinzel, serif",
