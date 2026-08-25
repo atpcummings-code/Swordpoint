@@ -212,6 +212,9 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - PDF header supplement name is now resolved from the already-loaded `supplementsMeta` (fetched from supplements.json on startup): new `selectedSupplementName` memo matches the currently selected supplement by its data file (`selectedSupplementUrl` minus BASE_DATA_URL) to the meta entry and uses its `name`; falls back to name-match then `data.supplement`. Passed to `PrintSummary`.
 - Verified live: selecting the Genghis Khan supplement shows "Supplement name: Genghis Khan" in the PDF header.
 
+## Implemented (2026-06 session, PDF page-break control)
+- PDF print: each unit's rows (main + sub-profiles + Special Rules/Equipment + separator) are wrapped in their own `<tbody style="break-inside:avoid; page-break-inside:avoid">` so a unit never splits across printed pages. Each category header is its own tbody with break-inside + break-after avoid (so a header isn't orphaned at a page bottom). Visual layout unchanged; verified render (multiple tbodies, columns intact).
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

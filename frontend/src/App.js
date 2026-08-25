@@ -3597,7 +3597,7 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
     const bp = unitBreakPoints(inst, calc);
     const boldC = { padding: "3px 4px 0", textAlign: "center", fontWeight: 700 };
     return (
-      <React.Fragment key={inst.instanceId}>
+      <tbody key={inst.instanceId} style={{ breakInside: "avoid", pageBreakInside: "avoid" }}>
         <tr style={{ verticalAlign: "top" }}>
           <td style={{ padding: "3px 4px 0", fontWeight: 600, textAlign: "left" }}>{inst.name}</td>
           <td style={{ padding: "3px 4px 0", textAlign: "left" }}>{inst.categoryId}</td>
@@ -3660,7 +3660,7 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
         <tr style={{ borderBottom: "1px solid #cbd5e1" }}>
           <td colSpan={11} style={{ padding: 0 }} />
         </tr>
-      </React.Fragment>
+      </tbody>
     );
   };
 
@@ -3728,9 +3728,9 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
             <th style={{ padding: "0 4px 2px", textAlign: "center" }}>Points</th>
           </tr>
         </thead>
-        <tbody>
-          {groups.map((group) => (
-            <React.Fragment key={`grp-${group.id}`}>
+        {groups.map((group) => (
+          <React.Fragment key={`grp-${group.id}`}>
+            <tbody style={{ breakInside: "avoid", pageBreakInside: "avoid", breakAfter: "avoid", pageBreakAfter: "avoid" }}>
               <tr>
                 <td
                   colSpan={11}
@@ -3748,10 +3748,10 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
                   {group.name}
                 </td>
               </tr>
-              {group.units.map((u) => renderUnitRows(u))}
-            </React.Fragment>
-          ))}
-        </tbody>
+            </tbody>
+            {group.units.map((u) => renderUnitRows(u))}
+          </React.Fragment>
+        ))}
       </table>
 
       {/* Army Validation Report */}
