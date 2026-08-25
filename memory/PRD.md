@@ -208,6 +208,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Tightened padding: stat-header rows (2px), and the Special Rules ↔ Equipment rows on both unit and sub-profile (near-zero inter-row gap). Atk/Def/Coh values bolded on unit and sub-profile name rows.
 - Verified live via revealed print-summary.
 
+## Implemented (2026-06 session, PDF supplement name from supplements.json)
+- PDF header supplement name is now resolved from the already-loaded `supplementsMeta` (fetched from supplements.json on startup): new `selectedSupplementName` memo matches the currently selected supplement by its data file (`selectedSupplementUrl` minus BASE_DATA_URL) to the meta entry and uses its `name`; falls back to name-match then `data.supplement`. Passed to `PrintSummary`.
+- Verified live: selecting the Genghis Khan supplement shows "Supplement name: Genghis Khan" in the PDF header.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

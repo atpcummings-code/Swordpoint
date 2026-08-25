@@ -1609,6 +1609,22 @@ function App() {
   const armyBreakPoint = Math.floor(totalBreakPoints / 2);
   const breakPointsToBreak = totalBreakPoints - armyBreakPoint;
 
+  // Supplement name for the PDF header: match the currently selected supplement
+  // (by its data file) to the entry in supplements.json and use its `name`.
+  const selectedSupplementName = useMemo(() => {
+    const norm = (s) => String(s || "").trim().toLowerCase();
+    const file = selectedSupplementUrl
+      ? selectedSupplementUrl.replace(BASE_DATA_URL, "")
+      : "";
+    let meta = null;
+    if (file) meta = supplementsMeta.find((s) => s && norm(s.file) === norm(file));
+    if (!meta) {
+      const selName = SUPPLEMENTS.find((s) => s.url === selectedSupplementUrl)?.name;
+      if (selName) meta = supplementsMeta.find((s) => norm(s.name) === norm(selName));
+    }
+    return meta?.name || data?.supplement || "";
+  }, [selectedSupplementUrl, supplementsMeta, data]);
+
   /* Count how many roster instances of each unit id have each equipment applied */
   const equipUsage = useMemo(() => {    const m = {};
     roster.forEach((i) => {
@@ -2638,7 +2654,7 @@ function App() {
         totalBreakPoints={totalBreakPoints}
         armyBreakPoint={armyBreakPoint}
         breakPointsToBreak={breakPointsToBreak}
-        supplementName={data?.supplement || ""}
+        supplementName={selectedSupplementName}
       />
     </div>
   );
