@@ -3430,9 +3430,9 @@ function ConstraintsTable({ categories, maxPoints }) {
                 : `${cat.min}–${effectiveCatMax(cat, maxPoints)} choices`;
             return (
               <tr key={cat.id} className="border-b border-slate-800/60 last:border-0">
-                <td className="px-4 py-2 text-slate-200 font-semibold">{cat.name}</td>
-                <td className="px-4 py-2 text-slate-400 capitalize">{cat.constraintType}</td>
-                <td className="px-4 py-2 text-right text-slate-300">{limit}</td>
+                <td className="px-4 py-0 text-slate-200 font-semibold">{cat.name}</td>
+                <td className="px-4 py-0 text-slate-400 capitalize">{cat.constraintType}</td>
+                <td className="px-4 py-0 text-right text-slate-300">{limit}</td>
               </tr>
             );
           })}
