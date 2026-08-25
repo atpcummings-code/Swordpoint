@@ -191,6 +191,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Roster Summary: added Total Break Points / Army Break Point / Break Points to Army Break between Max Points Limit and Total/Limit; widened the summary box 360→460px.
 - Verified live via Load-Army: Close Order≤150→2, Open Order>150→3, Skirmish(4)→1, Light Artillery(2)→2, plain→0, sub-profile(Open Order)→2 (blank on sub rows); summary 10/5/5. No card overflow.
 
+## Implemented (2026-06 session, BP/summary layout tweaks)
+- Unit card columns: renamed "Pts/Options" → "Options"; renamed BP column to "BPs" and moved it between TOTAL and D (both main and sub-profile rows; sub-profile BPs stays blank).
+- Roster Summary: widened box to 620px and its green bottom border is bottom-aligned with the Supplement/Army dropdowns (parent row uses items-stretch; verified all three bottoms = same y). Moved Total/Limit to the right of the Break-Points column; reordered the three BP lines to Total Break Points → Break Points to Army Break → Army Break Point.
+- Verified live (Load-Army): columns/labels correct, summary 5/3/2, bottoms aligned at px 202.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

@@ -2439,7 +2439,7 @@ function App() {
             <div
               data-testid="header-roster-summary"
               aria-hidden={!army}
-              className={`rounded-xl border-2 border-emerald-400 p-3 backdrop-blur bg-slate-950/90 w-[460px] shrink-0 flex flex-col justify-between ${
+              className={`rounded-xl border-2 border-emerald-400 p-3 backdrop-blur bg-slate-950/90 w-[620px] shrink-0 flex flex-col justify-between ${
                 army ? "" : "invisible pointer-events-none"
               }`}
             >
@@ -2450,7 +2450,7 @@ function App() {
                   <StatusBadge isValid={isValid} empty={roster.length === 0} />
                 </div>
 
-                <div className="mt-2 flex items-end justify-between gap-4 flex-wrap">
+                <div className="mt-2 flex items-end justify-between gap-6 flex-wrap">
                   <div className="flex flex-col items-center">
                     <label
                       htmlFor="max-points"
@@ -2469,36 +2469,38 @@ function App() {
                     />
                   </div>
 
-                  <div
-                    data-testid="army-break-point"
-                    className="flex flex-col gap-0.5 font-cond text-[11px] text-slate-300"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="uppercase tracking-widest text-slate-400">Total Break Points</span>
-                      <span data-testid="total-break-points" className="font-display text-sm font-bold text-slate-100">{totalBreakPoints}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="uppercase tracking-widest text-slate-400">Army Break Point</span>
-                      <span data-testid="army-break-point-value" className="font-display text-sm font-bold text-emerald-400">{armyBreakPoint}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="uppercase tracking-widest text-slate-400">Break Points to Army Break</span>
-                      <span data-testid="break-points-to-break" className="font-display text-sm font-bold text-slate-100">{breakPointsToBreak}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center">
-                    <div className="font-cond uppercase text-[11px] tracking-widest text-slate-300 text-center">
-                      Total / Limit
-                    </div>
+                  <div className="flex items-end gap-6 ml-auto">
                     <div
-                      data-testid="total-points"
-                      className={`font-display text-2xl font-extrabold leading-none text-center ${
-                        totalPoints > maxPoints ? "text-amber-400" : "text-emerald-400"
-                      }`}
+                      data-testid="army-break-point"
+                      className="flex flex-col gap-0.5 font-cond text-[11px] text-slate-300 min-w-[220px]"
                     >
-                      {totalPoints}
-                      <span className="text-slate-500 text-lg font-semibold"> / {maxPoints}</span>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="uppercase tracking-widest text-slate-400">Total Break Points</span>
+                        <span data-testid="total-break-points" className="font-display text-sm font-bold text-slate-100">{totalBreakPoints}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="uppercase tracking-widest text-slate-400">Break Points to Army Break</span>
+                        <span data-testid="break-points-to-break" className="font-display text-sm font-bold text-slate-100">{breakPointsToBreak}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="uppercase tracking-widest text-slate-400">Army Break Point</span>
+                        <span data-testid="army-break-point-value" className="font-display text-sm font-bold text-emerald-400">{armyBreakPoint}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                      <div className="font-cond uppercase text-[11px] tracking-widest text-slate-300 text-center">
+                        Total / Limit
+                      </div>
+                      <div
+                        data-testid="total-points"
+                        className={`font-display text-2xl font-extrabold leading-none text-center ${
+                          totalPoints > maxPoints ? "text-amber-400" : "text-emerald-400"
+                        }`}
+                      >
+                        {totalPoints}
+                        <span className="text-slate-500 text-lg font-semibold"> / {maxPoints}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3083,12 +3085,13 @@ function RosterRow({
         <div className="flex items-end gap-2 font-cond text-sm ml-auto">
           <Stat label="Pts/Base" value={calc.hasSubBases ? "–" : calc.ppbBase} w testid={`unit-pts-base-${inst.instanceId}`} />
           <Stat
-            label="Pts/Options"
+            label="Options"
             value={calc.hasSubBases ? "–" : calc.ppbOptions}
             w
             testid={`unit-pts-options-${inst.instanceId}`}
           />
           <Stat label="Total" value={calc.hasSubBases ? "–" : calc.ppbTotal} w testid={`unit-pts-total-${inst.instanceId}`} />
+          <Stat label="BPs" value={bp} w testid={`unit-bp-${inst.instanceId}`} />
           {calc.profiles?.length ? (
             <>
               <Stat label={isCommanderCat(inst.categoryId) || inst.type === "General" ? "A" : "D"} value={"\u00A0"} w testid={`unit-defence-${inst.instanceId}`} />
@@ -3104,7 +3107,6 @@ function RosterRow({
               <Stat label="C" value={calc.cohesion ?? "-"} w testid={`unit-cohesion-${inst.instanceId}`} />
             </>
           )}
-          <Stat label="BP" value={bp} w testid={`unit-bp-${inst.instanceId}`} />
           <Stat label="Pts/Unit" value={calc.total} big w testid={`unit-total-${inst.instanceId}`} />
         </div>
       </div>
@@ -3195,15 +3197,15 @@ function RosterRow({
                 )}
                 <div className="flex items-end gap-2 ml-auto">
                   <Stat label="Pts/Base" value={p.ptsBase} w sm testid={`subprofile-pts-base-${inst.instanceId}-${p.name}`} />
-                  <Stat label="Pts/Options" value={p.ptsOptions} w sm testid={`subprofile-pts-options-${inst.instanceId}-${p.name}`} />
+                  <Stat label="Options" value={p.ptsOptions} w sm testid={`subprofile-pts-options-${inst.instanceId}-${p.name}`} />
                   <Stat label="Total" value={p.total} w sm testid={`subprofile-pts-total-${inst.instanceId}-${p.name}`} />
+                  <Stat label="BPs" value={"\u00A0"} w sm testid={`subprofile-bp-${inst.instanceId}-${p.name}`} />
                   {isCommanderCat(inst.categoryId) || inst.type === "General" ? (
                     <Stat label="A" value={p.attacks ?? "-"} w sm testid={`subprofile-attacks-${inst.instanceId}-${p.name}`} />
                   ) : (
                     <Stat label="D" value={p.defence ?? "-"} w sm testid={`subprofile-defence-${inst.instanceId}-${p.name}`} />
                   )}
                   <Stat label="C" value={p.cohesion ?? "-"} w sm testid={`subprofile-cohesion-${inst.instanceId}-${p.name}`} />
-                  <Stat label="BP" value={"\u00A0"} w sm testid={`subprofile-bp-${inst.instanceId}-${p.name}`} />
                   <Stat label="Pts/Unit" value={p.ptsUnit} big w sm testid={`subprofile-pts-unit-${inst.instanceId}-${p.name}`} />
                 </div>
               </div>
