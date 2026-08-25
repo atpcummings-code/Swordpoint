@@ -196,6 +196,12 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Roster Summary: widened box to 620px and its green bottom border is bottom-aligned with the Supplement/Army dropdowns (parent row uses items-stretch; verified all three bottoms = same y). Moved Total/Limit to the right of the Break-Points column; reordered the three BP lines to Total Break Points → Break Points to Army Break → Army Break Point.
 - Verified live (Load-Army): columns/labels correct, summary 5/3/2, bottoms aligned at px 202.
 
+## Implemented (2026-06 session, Roster Summary anti-shift + centring)
+- BP value spans given fixed width `w-7` + `tabular-nums` (2-digit reserve, right-aligned) and the BP block a fixed `w-[236px]`, so values updating from 0 cause no text/layout shift.
+- Total/Limit: running total wrapped in a fixed `min-w:4ch` right-aligned `tabular-nums` span (reserves 4 digits) with `whitespace-nowrap` on "/ limit"; column is `shrink-0` so adding units never shifts neighbours.
+- Break Points block centred: summary row now has three direct `justify-between` children (Max Points | BP block | Total/Limit), all `shrink-0`, giving approximately equal left/right spacing around the centred BP block; three rows stay aligned (fixed block + value widths).
+- Verified live: before/after adding units, bp-block (x1195.5,w236), total-points (x1485,w137) and value spans (w28) unchanged; values 4/2/2, total 100/1000.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

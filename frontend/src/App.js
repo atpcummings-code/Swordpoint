@@ -2450,8 +2450,8 @@ function App() {
                   <StatusBadge isValid={isValid} empty={roster.length === 0} />
                 </div>
 
-                <div className="mt-2 flex items-end justify-between gap-6 flex-wrap">
-                  <div className="flex flex-col items-center">
+                <div className="mt-2 flex items-end justify-between gap-6">
+                  <div className="flex flex-col items-center shrink-0">
                     <label
                       htmlFor="max-points"
                       className="font-cond uppercase text-[11px] tracking-widest text-slate-300 mb-1 text-center"
@@ -2469,38 +2469,36 @@ function App() {
                     />
                   </div>
 
-                  <div className="flex items-end gap-6 ml-auto">
-                    <div
-                      data-testid="army-break-point"
-                      className="flex flex-col gap-0.5 font-cond text-[11px] text-slate-300 min-w-[220px]"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="uppercase tracking-widest text-slate-400">Total Break Points</span>
-                        <span data-testid="total-break-points" className="font-display text-sm font-bold text-slate-100">{totalBreakPoints}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="uppercase tracking-widest text-slate-400">Break Points to Army Break</span>
-                        <span data-testid="break-points-to-break" className="font-display text-sm font-bold text-slate-100">{breakPointsToBreak}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="uppercase tracking-widest text-slate-400">Army Break Point</span>
-                        <span data-testid="army-break-point-value" className="font-display text-sm font-bold text-emerald-400">{armyBreakPoint}</span>
-                      </div>
+                  <div
+                    data-testid="army-break-point"
+                    className="flex flex-col gap-0.5 font-cond text-[11px] text-slate-300 w-[236px] shrink-0"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="uppercase tracking-widest text-slate-400">Total Break Points</span>
+                      <span data-testid="total-break-points" className="font-display text-sm font-bold text-slate-100 inline-block w-7 text-right tabular-nums">{totalBreakPoints}</span>
                     </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="uppercase tracking-widest text-slate-400">Break Points to Army Break</span>
+                      <span data-testid="break-points-to-break" className="font-display text-sm font-bold text-slate-100 inline-block w-7 text-right tabular-nums">{breakPointsToBreak}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="uppercase tracking-widest text-slate-400">Army Break Point</span>
+                      <span data-testid="army-break-point-value" className="font-display text-sm font-bold text-emerald-400 inline-block w-7 text-right tabular-nums">{armyBreakPoint}</span>
+                    </div>
+                  </div>
 
-                    <div className="flex flex-col items-center">
-                      <div className="font-cond uppercase text-[11px] tracking-widest text-slate-300 text-center">
-                        Total / Limit
-                      </div>
-                      <div
-                        data-testid="total-points"
-                        className={`font-display text-2xl font-extrabold leading-none text-center ${
-                          totalPoints > maxPoints ? "text-amber-400" : "text-emerald-400"
-                        }`}
-                      >
-                        {totalPoints}
-                        <span className="text-slate-500 text-lg font-semibold"> / {maxPoints}</span>
-                      </div>
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="font-cond uppercase text-[11px] tracking-widest text-slate-300 text-center">
+                      Total / Limit
+                    </div>
+                    <div
+                      data-testid="total-points"
+                      className={`font-display text-2xl font-extrabold leading-none flex items-baseline justify-center tabular-nums ${
+                        totalPoints > maxPoints ? "text-amber-400" : "text-emerald-400"
+                      }`}
+                    >
+                      <span className="inline-block text-right" style={{ minWidth: "4ch" }}>{totalPoints}</span>
+                      <span className="text-slate-500 text-lg font-semibold whitespace-nowrap"> / {maxPoints}</span>
                     </div>
                   </div>
                 </div>
