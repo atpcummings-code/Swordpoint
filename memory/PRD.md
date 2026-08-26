@@ -215,6 +215,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 ## Implemented (2026-06 session, PDF page-break control)
 - PDF print: each unit's rows (main + sub-profiles + Special Rules/Equipment + separator) are wrapped in their own `<tbody style="break-inside:avoid; page-break-inside:avoid">` so a unit never splits across printed pages. Each category header is its own tbody with break-inside + break-after avoid (so a header isn't orphaned at a page bottom). Visual layout unchanged; verified render (multiple tbodies, columns intact).
 
+## Fixed (2026-06 session, duplication carries stale hidden options)
+- Bug: duplicating a unit dropped over-limit equipment (maxUnits/maxEquipmentCount) from the clone, but options that were `hiddenUntilEnabled:"hidden"` and only revealed by that now-dropped equipment stayed selected — and since `computeUnit` costs equipped options regardless of hidden state, the clone kept phantom points/stats (e.g. Charlemagne Freeman Cavalry: Light Armour maxUnits 2 → 3rd duplicate correctly disabled Light Armour but kept Shock Cavalry active).
+- Fix: after the limit-based removal in `duplicateUnit`, iterate to a fixpoint pruning any equipped `hiddenUntilEnabled:"hidden"` option that is no longer revealed by a still-equipped option's `enableHidden` (handles reveal chains).
+- Verified live (MOCK repro, Light Armour maxUnits 2 + hidden Shock Cavalry): duplicating a 3rd unit dropped Light Armour AND Shock Cavalry (hidden, unequipped); clone total 30 vs 48 on originals.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

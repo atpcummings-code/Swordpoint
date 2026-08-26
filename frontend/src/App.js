@@ -1529,11 +1529,31 @@ function App() {
           });
       });
       // drop any equipment on the clone that would exceed its limit
-      const cloneEquipped = src.equipped.filter((name) => {
+      let cloneEquipped = src.equipped.filter((name) => {
         const opt = src.optionalEquipment.find((e) => e.name === name);
         const lim = opt ? opt.maxEquipmentCount ?? opt.maxUnits : null;
         return !(lim != null && (usage[name] || 0) >= lim);
       });
+      // Re-evaluate conditional reveals: a `hiddenUntilEnabled: "hidden"` option
+      // may only stay selected if a still-selected option's `enableHidden`
+      // reveals it. Iterate to a fixpoint so reveal chains collapse correctly
+      // (e.g. Light Armour at maxUnits is dropped → its unlocked Shock Cavalry
+      // must also be dropped/hidden on the duplicate).
+      const optDefs = src.optionalEquipment || [];
+      for (let pass = 0; pass <= optDefs.length; pass++) {
+        const revealed = new Set(
+          cloneEquipped.flatMap(
+            (n) => optDefs.find((e) => e.name === n)?.enableHidden || []
+          )
+        );
+        const pruned = cloneEquipped.filter((n) => {
+          const def = optDefs.find((e) => e.name === n);
+          if (!def || def.hiddenUntilEnabled !== "hidden") return true;
+          return revealed.has(n);
+        });
+        if (pruned.length === cloneEquipped.length) break;
+        cloneEquipped = pruned;
+      }
       const clone = {
         ...src,
         equipped: cloneEquipped,
