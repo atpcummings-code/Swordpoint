@@ -257,6 +257,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Fix: made matching plural-tolerant (strips a trailing "s" on both the enabled equipment and the rule token, alongside case/trim normalization) and accept alternate side keys (`unitIds|units|ids`, `equipment|gear|weapons`). Base + enabled-optional + visible sub-profile equipment still checked for both sides.
 - Verified live: data "Bows/Slings/Javelins" (plural) with rule tokens "Bow/Sling/Javelin" (singular) → left=2, right=1, `lessThanOrEqual` ratio 1 → red error fires correctly.
 
+## Fixed (2026-06 session, equipmentUnitCount uses effective equipment)
+- `unitHasEquip` now counts against each unit's EFFECTIVE equipment only: `calc.equipment` (base equipment with `equipmentAdded` merged in and `equipmentRemoved` stripped for selected optional equipment) plus visible sub-profile effective equipment. Raw `inst.baseEquipment` and selected option NAMES are no longer used, so removed items don't count and added items do. Case-insensitive + plural-tolerant matching retained.
+- Verified live: a unit with base Spear + selected "Add Bow" (equipmentAdded Bow) is counted for "Bow"; a unit with base Bow + selected "Drop Bow" (equipmentRemoved Bow) is excluded.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

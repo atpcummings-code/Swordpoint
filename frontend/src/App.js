@@ -2229,13 +2229,14 @@ function App() {
         const norm = (s) => String(s || "").trim().toLowerCase();
         const singular = (s) => (s.length > 3 && s.endsWith("s") ? s.slice(0, -1) : s);
         const unitHasEquip = (c, equip) => {
-          // Enabled equipment = base equipment + currently-selected optional
-          // equipment (+ visible sub-profile equipment). Checked for BOTH sides.
-          // Matching is case-insensitive and plural-tolerant (Javelin ↔ Javelins).
+          // Use each unit's EFFECTIVE equipment: calc.equipment already applies
+          // base equipment + equipmentAdded − equipmentRemoved from selected
+          // optional equipment; visible sub-profiles contribute their effective
+          // equipment too. (Raw inst.baseEquipment / option names are NOT used,
+          // so removed items don't count and added items do.) Case-insensitive,
+          // plural-tolerant matching (Javelin ↔ Javelins).
           const enabled = new Set();
           [
-            ...(c.inst.baseEquipment || []),
-            ...(c.inst.equipped || []),
             ...(c.calc.equipment || []),
             ...((c.calc.profiles || []).flatMap((p) => p.equipment || [])),
           ].forEach((item) => {
