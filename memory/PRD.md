@@ -238,6 +238,9 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Roster Summary box: added `items-end` so the content `w-fit` wrapper hugs the right side (content right edge now ~8px from box border = matches the p-2 left padding, so right padding == left padding). Added `ml-auto` so the box is flush-right within the header's right column.
 - Verified live: Total/Limit right edge ~10px inside box right; ROSTER SUMMARY↔Max Points and badge↔Total/Limit alignments preserved.
 
+## Implemented (2026-06 session, Roster Summary width fit)
+- Changed the summary box from fixed `w-[620px]` to `w-fit` so it shrinks to its content: left and right padding are now symmetric (both ~10px incl. border). Box stays flush-right (`ml-auto`) with prior alignments intact.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
