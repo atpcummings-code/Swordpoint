@@ -2206,7 +2206,61 @@ function App() {
       return all.find((u) => u.id === id)?.name || id;
     };
     (army.armyValidation || []).forEach((rule) => {
-      if (!rule || !rule.expression) return;
+      if (!rule) return;
+      // equipmentUnitCount: count units (from unitIds) that have at least one of
+      // `equipment` enabled (base or optional, selected only) on each side, then
+      // compare left vs right*ratio. Each qualifying unit counts once.
+      if (rule.type === "equipmentUnitCount") {
+        const CMP = {
+          lessThan: (a, b) => a < b,
+          lessThanOrEqual: (a, b) => a <= b,
+          greaterThan: (a, b) => a > b,
+          greaterThanOrEqual: (a, b) => a >= b,
+          equalTo: (a, b) => a === b,
+        };
+        const CMP_LABEL = {
+          lessThan: "less than",
+          lessThanOrEqual: "no more than",
+          greaterThan: "greater than",
+          greaterThanOrEqual: "at least",
+          equalTo: "equal to",
+        };
+        const arr = (x) => (Array.isArray(x) ? x : []);
+        const unitHasEquip = (c, equip) => {
+          const enabled = new Set([
+            ...(c.inst.equipped || []),
+            ...(c.calc.equipment || []),
+            ...(c.inst.baseEquipment || []),
+            ...((c.calc.profiles || []).flatMap((p) => p.equipment || [])),
+          ]);
+          return equip.some((n) => enabled.has(n));
+        };
+        const countSide = (side) => {
+          const ids = new Set(arr(side && side.unitIds));
+          const equip = arr(side && side.equipment);
+          if (ids.size === 0 || equip.length === 0) return 0;
+          return computed.filter((c) => ids.has(c.inst.unitId) && unitHasEquip(c, equip)).length;
+        };
+        const fn = CMP[rule.expression];
+        if (!fn) return;
+        const leftCount = countSide(rule.left);
+        const rightCount = countSide(rule.right);
+        const ratio = rule.ratio != null ? rule.ratio : 1;
+        const threshold = rightCount * ratio;
+        if (leftCount === 0 && rightCount === 0) return;
+        if (!fn(leftCount, threshold)) {
+          const leftEq = arr(rule.left && rule.left.equipment).join("/");
+          const rightEq = arr(rule.right && rule.right.equipment).join("/");
+          const leftNames = arr(rule.left && rule.left.unitIds).map((id) => nameOf(id)).join(" + ");
+          const rightNames = arr(rule.right && rule.right.unitIds).map((id) => nameOf(id)).join(" + ");
+          w.push({
+            level: "critical",
+            msg: `Units with ${leftEq} (${leftNames}: ${leftCount}) must be ${CMP_LABEL[rule.expression]} ${ratio}× units with ${rightEq} (${rightNames}: ${rightCount}) = ${threshold}.`,
+          });
+        }
+        return;
+      }
+      if (!rule.expression) return;
       // left side: an array of ids ("ids") whose bases are summed, or a single id.
       const leftIds = Array.isArray(rule.ids)
         ? rule.ids

@@ -244,6 +244,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 ## Fixed (2026-06 session, Roster Summary top-row height shift)
 - The "Empty roster" badge had no border while "Valid"/"Warnings" had a 1px border (+2px height), shifting the box on toggle. Added `border border-transparent` to the empty badge so all states are identical height, and reserved `min-h-[30px]` on the summary top row. Verified: box height 138px / top y=64 unchanged across Empty→Valid→Warnings.
 
+## Implemented (2026-06 session, armyValidation equipmentUnitCount)
+- New `armyValidation` rule `type: "equipmentUnitCount"` with `{ left:{unitIds,equipment}, expression, ratio, right:{unitIds,equipment} }`. For each side it counts units (from unitIds) that have at least one of the `equipment` items ENABLED (base or selected optional; sub-profile equipment included); a unit with multiple matches counts once; disabled/unselected equipment is ignored. Compares leftCount `expression` (rightCount × ratio); expressions: lessThan/lessThanOrEqual/greaterThan/greaterThanOrEqual/equalTo. On failure pushes a `critical` (red) validation error. Handled at the top of the armyValidation loop in the warnings memo.
+- Verified live (temp MOCK rule): left "Bow/Sling" units = 2 (one unit had both Bow+Sling, counted once) vs right "Javelin" = 1 → error shown; adding a 2nd Javelin unit cleared it.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
