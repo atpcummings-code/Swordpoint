@@ -2480,7 +2480,7 @@ function App() {
               }`}
             >
               <div className="w-fit">
-                <div className="w-full flex items-center justify-between gap-3">
+                <div className="w-full flex items-center justify-between gap-3 min-h-[30px]">
                   <span className="font-cond uppercase text-[11px] tracking-widest text-slate-300">
                     Roster Summary
                   </span>
@@ -2691,7 +2691,7 @@ function StatusBadge({ isValid, empty }) {
     return (
       <span
         data-testid="status-badge"
-        className="inline-flex items-center gap-1.5 rounded-full bg-slate-800 text-slate-300 px-3 py-1 font-cond text-sm"
+        className="inline-flex items-center gap-1.5 rounded-full bg-slate-800 text-slate-300 border border-transparent px-3 py-1 font-cond text-sm"
       >
         Empty roster
       </span>

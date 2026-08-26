@@ -241,6 +241,9 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 ## Implemented (2026-06 session, Roster Summary width fit)
 - Changed the summary box from fixed `w-[620px]` to `w-fit` so it shrinks to its content: left and right padding are now symmetric (both ~10px incl. border). Box stays flush-right (`ml-auto`) with prior alignments intact.
 
+## Fixed (2026-06 session, Roster Summary top-row height shift)
+- The "Empty roster" badge had no border while "Valid"/"Warnings" had a 1px border (+2px height), shifting the box on toggle. Added `border border-transparent` to the empty badge so all states are identical height, and reserved `min-h-[30px]` on the summary top row. Verified: box height 138px / top y=64 unchanged across Empty→Valid→Warnings.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
