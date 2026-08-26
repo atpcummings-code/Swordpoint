@@ -2226,14 +2226,19 @@ function App() {
           equalTo: "equal to",
         };
         const arr = (x) => (Array.isArray(x) ? x : []);
+        const norm = (s) => String(s || "").trim().toLowerCase();
         const unitHasEquip = (c, equip) => {
-          const enabled = new Set([
-            ...(c.inst.equipped || []),
-            ...(c.calc.equipment || []),
-            ...(c.inst.baseEquipment || []),
-            ...((c.calc.profiles || []).flatMap((p) => p.equipment || [])),
-          ]);
-          return equip.some((n) => enabled.has(n));
+          // Enabled equipment = base equipment + currently-selected optional
+          // equipment (+ visible sub-profile equipment). Checked for BOTH sides.
+          const enabled = new Set(
+            [
+              ...(c.inst.baseEquipment || []),
+              ...(c.inst.equipped || []),
+              ...(c.calc.equipment || []),
+              ...((c.calc.profiles || []).flatMap((p) => p.equipment || [])),
+            ].map(norm)
+          );
+          return equip.some((n) => enabled.has(norm(n)));
         };
         const countSide = (side) => {
           const ids = new Set(arr(side && side.unitIds));
