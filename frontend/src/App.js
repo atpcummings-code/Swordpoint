@@ -2448,7 +2448,7 @@ function App() {
                     <SelectTrigger
                       id="army-select"
                       data-testid="army-select"
-                      className="h-auto bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 w-[280px] max-w-[280px] cursor-pointer"
+                      className="h-auto bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 min-w-[280px] cursor-pointer"
                     >
                       <SelectValue placeholder="— Select an army —" />
                     </SelectTrigger>
@@ -2486,7 +2486,7 @@ function App() {
                   <StatusBadge isValid={isValid} empty={roster.length === 0} />
                 </div>
 
-                <div className="mt-2 flex items-end justify-between gap-6">
+                <div className="mt-2 flex items-end justify-center gap-4">
                   <div className="flex flex-col items-center shrink-0">
                     <label
                       htmlFor="max-points"
@@ -2507,20 +2507,21 @@ function App() {
 
                   <div
                     data-testid="army-break-point"
-                    className="flex flex-col gap-0.5 font-cond text-[11px] text-slate-300 w-[236px] shrink-0"
+                    className="font-cond text-[11px] text-slate-300 shrink-0"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "max-content 1.75rem",
+                      columnGap: "3ch",
+                      rowGap: "2px",
+                      alignItems: "center",
+                    }}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="uppercase tracking-widest text-slate-400">Total Break Points</span>
-                      <span data-testid="total-break-points" className="font-display text-sm font-bold text-slate-100 inline-block w-7 text-right tabular-nums">{totalBreakPoints}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="uppercase tracking-widest text-slate-400">Break Points to Army Break</span>
-                      <span data-testid="break-points-to-break" className="font-display text-sm font-bold text-slate-100 inline-block w-7 text-right tabular-nums">{breakPointsToBreak}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="uppercase tracking-widest text-slate-400">Army Break Point</span>
-                      <span data-testid="army-break-point-value" className="font-display text-sm font-bold text-emerald-400 inline-block w-7 text-right tabular-nums">{armyBreakPoint}</span>
-                    </div>
+                    <span className="uppercase tracking-widest text-slate-400">Total Break Points</span>
+                    <span data-testid="total-break-points" className="font-display text-sm font-bold text-slate-100 text-right tabular-nums">{totalBreakPoints}</span>
+                    <span className="uppercase tracking-widest text-slate-400">Break Points to Army Break</span>
+                    <span data-testid="break-points-to-break" className="font-display text-sm font-bold text-slate-100 text-right tabular-nums">{breakPointsToBreak}</span>
+                    <span className="uppercase tracking-widest text-slate-400">Army Break Point</span>
+                    <span data-testid="army-break-point-value" className="font-display text-sm font-bold text-emerald-400 text-right tabular-nums">{armyBreakPoint}</span>
                   </div>
 
                   <div className="flex flex-col items-center shrink-0">

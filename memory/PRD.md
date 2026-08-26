@@ -224,6 +224,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Header no longer stacks the Roster Summary below the left controls for long army names. Removed `flex-wrap` from the header row and the dropdowns row (now `flex-nowrap`), added `min-w-0` to the left column so it can shrink, and changed the Army `SelectTrigger` from `min-w-[280px]` to `w-[280px] max-w-[280px]` so long names truncate with an ellipsis (shadcn trigger's `line-clamp-1`). Summary box stays `w-[620px] shrink-0` on the right.
 - Verified at 1360px with the long Welsh name: Save/Load box and Summary share the same row, summary right of the left stack, army name ellipsised.
 
+## Implemented (2026-06 session, Roster Summary spacing + army name revert)
+- Roster Summary inner row changed from `justify-between gap-6` to `justify-center gap-4` so the three columns (Max Points / Break Points / Total-Limit) sit ~1/3 of the previous spacing apart.
+- Middle Break-Points block converted to a 2-column CSS grid (`gridTemplateColumns: 'max-content 1.75rem'`, `columnGap: 3ch`) so each value sits ~3 characters after the (longest) label and all three values stay right-aligned (verified identical right edge). Fixed value column width keeps 2-digit values from shifting.
+- Reverted the Army dropdown to `min-w-[280px]` (no max/truncation) so full army names display; header stays two-column via the earlier `flex-nowrap` + `min-w-0`.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
