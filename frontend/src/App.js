@@ -2225,24 +2225,34 @@ function App() {
           greaterThanOrEqual: "at least",
           equalTo: "equal to",
         };
-        const arr = (x) => (Array.isArray(x) ? x : []);
+        const arr = (x) => (Array.isArray(x) ? x : x ? [x] : []);
         const norm = (s) => String(s || "").trim().toLowerCase();
+        const singular = (s) => (s.length > 3 && s.endsWith("s") ? s.slice(0, -1) : s);
         const unitHasEquip = (c, equip) => {
           // Enabled equipment = base equipment + currently-selected optional
           // equipment (+ visible sub-profile equipment). Checked for BOTH sides.
-          const enabled = new Set(
-            [
-              ...(c.inst.baseEquipment || []),
-              ...(c.inst.equipped || []),
-              ...(c.calc.equipment || []),
-              ...((c.calc.profiles || []).flatMap((p) => p.equipment || [])),
-            ].map(norm)
-          );
-          return equip.some((n) => enabled.has(norm(n)));
+          // Matching is case-insensitive and plural-tolerant (Javelin ↔ Javelins).
+          const enabled = new Set();
+          [
+            ...(c.inst.baseEquipment || []),
+            ...(c.inst.equipped || []),
+            ...(c.calc.equipment || []),
+            ...((c.calc.profiles || []).flatMap((p) => p.equipment || [])),
+          ].forEach((item) => {
+            const n = norm(item);
+            enabled.add(n);
+            enabled.add(singular(n));
+          });
+          return equip.some((n) => {
+            const q = norm(n);
+            return enabled.has(q) || enabled.has(singular(q));
+          });
         };
+        const sideUnitIds = (side) => arr(side && (side.unitIds ?? side.units ?? side.ids));
+        const sideEquip = (side) => arr(side && (side.equipment ?? side.gear ?? side.weapons));
         const countSide = (side) => {
-          const ids = new Set(arr(side && side.unitIds));
-          const equip = arr(side && side.equipment);
+          const ids = new Set(sideUnitIds(side));
+          const equip = sideEquip(side);
           if (ids.size === 0 || equip.length === 0) return 0;
           return computed.filter((c) => ids.has(c.inst.unitId) && unitHasEquip(c, equip)).length;
         };
@@ -2254,10 +2264,10 @@ function App() {
         const threshold = rightCount * ratio;
         if (leftCount === 0 && rightCount === 0) return;
         if (!fn(leftCount, threshold)) {
-          const leftEq = arr(rule.left && rule.left.equipment).join("/");
-          const rightEq = arr(rule.right && rule.right.equipment).join("/");
-          const leftNames = arr(rule.left && rule.left.unitIds).map((id) => nameOf(id)).join(" + ");
-          const rightNames = arr(rule.right && rule.right.unitIds).map((id) => nameOf(id)).join(" + ");
+          const leftEq = sideEquip(rule.left).join("/");
+          const rightEq = sideEquip(rule.right).join("/");
+          const leftNames = sideUnitIds(rule.left).map((id) => nameOf(id)).join(" + ");
+          const rightNames = sideUnitIds(rule.right).map((id) => nameOf(id)).join(" + ");
           w.push({
             level: "critical",
             msg: `Units with ${leftEq} (${leftNames}: ${leftCount}) must be ${CMP_LABEL[rule.expression]} ${ratio}× units with ${rightEq} (${rightNames}: ${rightCount}) = ${threshold}.`,

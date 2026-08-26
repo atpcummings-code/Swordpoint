@@ -252,6 +252,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Hardened `equipmentUnitCount` counting: `unitHasEquip` now explicitly aggregates base equipment (`inst.baseEquipment`), enabled optional equipment (`inst.equipped` + `calc.equipment`), and visible sub-profile equipment for BOTH left and right sides, and matches names case-insensitively/trim-normalized (fixes right-side base equipment being missed due to name-case/whitespace mismatches).
 - Verified live (temp MOCK rule, rule used lowercase "javelin"): right-side unit whose ONLY match was base equipment "Javelin" was correctly counted (right = 1), error rendered as red critical.
 
+## Fixed (2026-06 session, equipmentUnitCount not firing — plural mismatch)
+- Root cause: equipment name matching was exact, so real data with plural weapon names (e.g. "Bows"/"Slings"/"Javelins") never matched singular rule tokens ("Bow"/"Sling"/"Javelin") — a side counted 0 and the constraint silently passed.
+- Fix: made matching plural-tolerant (strips a trailing "s" on both the enabled equipment and the rule token, alongside case/trim normalization) and accept alternate side keys (`unitIds|units|ids`, `equipment|gear|weapons`). Base + enabled-optional + visible sub-profile equipment still checked for both sides.
+- Verified live: data "Bows/Slings/Javelins" (plural) with rule tokens "Bow/Sling/Javelin" (singular) → left=2, right=1, `lessThanOrEqual` ratio 1 → red error fires correctly.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
