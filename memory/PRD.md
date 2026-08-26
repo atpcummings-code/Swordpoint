@@ -220,6 +220,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Fix: after the limit-based removal in `duplicateUnit`, iterate to a fixpoint pruning any equipped `hiddenUntilEnabled:"hidden"` option that is no longer revealed by a still-equipped option's `enableHidden` (handles reveal chains).
 - Verified live (MOCK repro, Light Armour maxUnits 2 + hidden Shock Cavalry): duplicating a 3rd unit dropped Light Armour AND Shock Cavalry (hidden, unequipped); clone total 30 vs 48 on originals.
 
+## Fixed (2026-06 session, header two-column no-collapse)
+- Header no longer stacks the Roster Summary below the left controls for long army names. Removed `flex-wrap` from the header row and the dropdowns row (now `flex-nowrap`), added `min-w-0` to the left column so it can shrink, and changed the Army `SelectTrigger` from `min-w-[280px]` to `w-[280px] max-w-[280px]` so long names truncate with an ellipsis (shadcn trigger's `line-clamp-1`). Summary box stays `w-[620px] shrink-0` on the right.
+- Verified at 1360px with the long Welsh name: Save/Load box and Summary share the same row, summary right of the left stack, army name ellipsised.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

@@ -2370,8 +2370,8 @@ function App() {
           )}
 
           {/* Left stack (Save/Load + dropdowns) · Roster summary (right) — equal height */}
-          <div className="w-full flex items-stretch justify-between gap-6 flex-wrap">
-            <div className="flex flex-col gap-2">
+          <div className="w-full flex items-stretch justify-between gap-6 flex-nowrap">
+            <div className="flex flex-col gap-2 min-w-0">
               {/* Save / Load army file box */}
               <div
                 data-testid="army-file-box"
@@ -2411,7 +2411,7 @@ function App() {
               </div>
 
               {/* Supplement + Army dropdowns */}
-              <div className="flex items-end gap-6 flex-wrap">
+              <div className="flex items-end gap-6 flex-nowrap min-w-0">
               <div className="flex flex-col items-start gap-1">
                 <label htmlFor="supplement-select" className="font-cond uppercase text-xs tracking-widest text-slate-300">
                   Supplement
@@ -2448,7 +2448,7 @@ function App() {
                     <SelectTrigger
                       id="army-select"
                       data-testid="army-select"
-                      className="h-auto bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 min-w-[280px] cursor-pointer"
+                      className="h-auto bg-slate-900 border border-slate-700 rounded-md px-4 py-2 font-cond text-base text-slate-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 w-[280px] max-w-[280px] cursor-pointer"
                     >
                       <SelectValue placeholder="— Select an army —" />
                     </SelectTrigger>
