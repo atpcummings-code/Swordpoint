@@ -1967,6 +1967,85 @@ function App() {
     return result;
   }, [roster]);
 
+  /* --- armyValidation: equipmentBasesCount ---
+     Compare the bases of INDIVIDUAL roster units on the left side against the
+     bases of INDIVIDUAL roster units on the right side, matched by effective
+     equipment. For each matched left unit, compare its bases against each
+     matched right unit's bases × ratio; if it fails against ANY right unit it
+     is flagged on its own card AND in the army validation summary. Skipped if
+     either side has no matching units. */
+  const equipmentBasesCount = useMemo(() => {
+    const summary = [];
+    const byUnit = {};
+    if (!army) return { summary, byUnit };
+    const CMP = {
+      lessThan: (a, b) => a < b,
+      lessThanOrEqual: (a, b) => a <= b,
+      greaterThan: (a, b) => a > b,
+      greaterThanOrEqual: (a, b) => a >= b,
+      equalTo: (a, b) => a === b,
+    };
+    const CMP_LABEL = {
+      lessThan: "less than",
+      lessThanOrEqual: "no more than",
+      greaterThan: "greater than",
+      greaterThanOrEqual: "at least",
+      equalTo: "equal to",
+    };
+    const arr = (x) => (Array.isArray(x) ? x : x ? [x] : []);
+    const norm = (s) => String(s || "").trim().toLowerCase();
+    const singular = (s) => (s.length > 3 && s.endsWith("s") ? s.slice(0, -1) : s);
+    const unitHasEquip = (c, equip) => {
+      const enabled = new Set();
+      [
+        ...(c.calc.equipment || []),
+        ...((c.calc.profiles || []).flatMap((p) => p.equipment || [])),
+      ].forEach((item) => {
+        const n = norm(item);
+        enabled.add(n);
+        enabled.add(singular(n));
+      });
+      return equip.some((n) => {
+        const q = norm(n);
+        return enabled.has(q) || enabled.has(singular(q));
+      });
+    };
+    const sideUnitIds = (side) => arr(side && (side.unitIds ?? side.units ?? side.ids));
+    const sideEquip = (side) => arr(side && (side.equipment ?? side.gear ?? side.weapons));
+    const basesOf = (c) => (c.calc.mainBases != null ? c.calc.mainBases : c.inst.bases);
+    const matchSide = (side) => {
+      const ids = new Set(sideUnitIds(side));
+      const equip = sideEquip(side);
+      if (ids.size === 0 || equip.length === 0) return [];
+      return computed.filter((c) => ids.has(c.inst.unitId) && unitHasEquip(c, equip));
+    };
+    (army.armyValidation || []).forEach((rule) => {
+      if (!rule || rule.type !== "equipmentBasesCount") return;
+      const fn = CMP[rule.expression];
+      if (!fn) return;
+      const lefts = matchSide(rule.left);
+      const rights = matchSide(rule.right);
+      if (lefts.length === 0 || rights.length === 0) return;
+      const ratio = rule.ratio != null ? rule.ratio : 1;
+      const leftEq = sideEquip(rule.left).join("/");
+      const rightEq = sideEquip(rule.right).join("/");
+      const ratioTxt = ratio === 1 ? "" : `${ratio}× `;
+      lefts.forEach((L) => {
+        const lb = basesOf(L);
+        const failing = rights.filter((R) => !fn(lb, basesOf(R) * ratio));
+        if (failing.length === 0) return;
+        const detail = failing
+          .map((R) => `${R.inst.name}: ${basesOf(R)} → limit ${basesOf(R) * ratio}`)
+          .join("; ");
+        const msg = `${L.inst.name} (${lb} bases with ${leftEq}) must be ${CMP_LABEL[rule.expression]} ${ratioTxt}the bases of ${rightEq} units (${detail}).`;
+        (byUnit[L.inst.instanceId] = byUnit[L.inst.instanceId] || []).push(msg);
+        summary.push({ level: "critical", msg });
+      });
+    });
+    return { summary, byUnit };
+  }, [army, computed]);
+
+
   const warnings = useMemo(() => {
     if (!army) return [];
     const w = [];
@@ -2374,8 +2453,10 @@ function App() {
       }
     });
 
+    equipmentBasesCount.summary.forEach((s) => w.push(s));
+
     return w;
-  }, [army, armies, allyArmies, computed, totalPoints, maxPoints, roster, checkedAllies, alliesCategory, maxAllies]);
+  }, [army, armies, allyArmies, computed, totalPoints, maxPoints, roster, checkedAllies, alliesCategory, maxAllies, equipmentBasesCount]);
 
   const isValid = warnings.length === 0 && roster.length > 0;
 
@@ -2712,6 +2793,7 @@ function App() {
                   equipUsage={equipUsage}
                   rosterCounts={rosterCounts}
                   excludeConflict={excludeConflicts[inst.unitId]}
+                  extraWarnings={equipmentBasesCount.byUnit[inst.instanceId]}
                   enabledEveryLocked={equipLocks[inst.instanceId]}
                   onChangeBases={changeBases}
                   onChangeSubBases={changeSubBases}
@@ -2994,6 +3076,7 @@ function RosterRow({
   equipUsage,
   rosterCounts,
   excludeConflict,
+  extraWarnings,
   enabledEveryLocked,
   onChangeBases,
   onChangeSubBases,
@@ -3036,6 +3119,10 @@ function RosterRow({
     requireWarnings.push(
       `Cannot be fielded alongside ${excludeConflict.join(", ")} — remove one of these units.`
     );
+  }
+
+  if (Array.isArray(extraWarnings)) {
+    extraWarnings.forEach((msg) => requireWarnings.push(msg));
   }
 
   // Sub-unit units: warn (do not block) when combined bases fall below the main unit min.

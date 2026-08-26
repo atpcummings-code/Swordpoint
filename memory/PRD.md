@@ -261,6 +261,13 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - `unitHasEquip` now counts against each unit's EFFECTIVE equipment only: `calc.equipment` (base equipment with `equipmentAdded` merged in and `equipmentRemoved` stripped for selected optional equipment) plus visible sub-profile effective equipment. Raw `inst.baseEquipment` and selected option NAMES are no longer used, so removed items don't count and added items do. Case-insensitive + plural-tolerant matching retained.
 - Verified live: a unit with base Spear + selected "Add Bow" (equipmentAdded Bow) is counted for "Bow"; a unit with base Bow + selected "Drop Bow" (equipmentRemoved Bow) is excluded.
 
+## Implemented (2026-06 session, armyValidation equipmentBasesCount)
+- New `armyValidation` rule `type: "equipmentBasesCount"` with `{ left:{unitIds,equipment}, expression, ratio, right:{unitIds,equipment} }`. Matches INDIVIDUAL roster units on each side by unitId AND effective-equipment match (same case-insensitive/plural-tolerant `calc.equipment` + visible sub-profile equipment logic as `equipmentUnitCount`). A unit's "base count" = `calc.mainBases` (sums visible sub-unit bases for combinedFormation units, else `inst.bases`).
+- For each matched LEFT unit, its bases are compared against EACH matched RIGHT unit's bases × ratio via the expression (lessThan/lessThanOrEqual/greaterThan/greaterThanOrEqual/equalTo). If it fails against ANY right unit it is flagged: an amber warning appears on its own roster card AND a red critical entry is pushed to the Army Validation summary. The card/summary message lists ALL failing right units (user choice b), e.g. "Noble Cavalry (3 bases with Light Armour) must be no more than 0.5× the bases of Spear units (Light Cavalry: 3 → limit 1.5)."
+- Skipped entirely when either side has zero matching units. Fully reactive.
+- Impl: a dedicated `equipmentBasesCount` useMemo returns `{ summary, byUnit }`; `summary` is spread into the `warnings` memo, `byUnit[instanceId]` is threaded to `RosterRow` via new `extraWarnings` prop and appended to its `requireWarnings` amber block.
+- Verified live (temp franks rule, noble_cavalry Light Armour ≤ 0.5× light_cavalry Spear bases): at noble 3 / light 3 → card + summary error fired; raising light to 6 (limit 3) cleared both. Temp seeds removed; App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
