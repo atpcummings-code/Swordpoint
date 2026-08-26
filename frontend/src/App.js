@@ -2475,7 +2475,7 @@ function App() {
             <div
               data-testid="header-roster-summary"
               aria-hidden={!army}
-              className={`rounded-xl border-2 border-emerald-400 p-2 backdrop-blur bg-slate-950/90 w-[620px] shrink-0 flex flex-col justify-between ${
+              className={`rounded-xl border-2 border-emerald-400 p-2 backdrop-blur bg-slate-950/90 w-[620px] shrink-0 ml-auto flex flex-col items-end justify-between ${
                 army ? "" : "invisible pointer-events-none"
               }`}
             >

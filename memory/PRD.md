@@ -234,6 +234,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Because the badge is right-anchored inside the content-width wrapper (right edge fixed by the Total/Limit column, which is wider than the badge), it grows leftward when its text changes and never shifts right / moves layout.
 - Verified live (pixel): ROSTER SUMMARY left == Max Points label left (1026); badge right == Total/Limit right (~1519).
 
+## Implemented (2026-06 session, Roster Summary right-align)
+- Roster Summary box: added `items-end` so the content `w-fit` wrapper hugs the right side (content right edge now ~8px from box border = matches the p-2 left padding, so right padding == left padding). Added `ml-auto` so the box is flush-right within the header's right column.
+- Verified live: Total/Limit right edge ~10px inside box right; ROSTER SUMMARY↔Max Points and badge↔Total/Limit alignments preserved.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
