@@ -2475,19 +2475,20 @@ function App() {
             <div
               data-testid="header-roster-summary"
               aria-hidden={!army}
-              className={`rounded-xl border-2 border-emerald-400 p-3 backdrop-blur bg-slate-950/90 w-[620px] shrink-0 flex flex-col justify-between ${
+              className={`rounded-xl border-2 border-emerald-400 p-2 backdrop-blur bg-slate-950/90 w-[620px] shrink-0 flex flex-col justify-between ${
                 army ? "" : "invisible pointer-events-none"
               }`}
             >
-                <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="w-fit">
+                <div className="w-full flex items-center justify-between gap-3">
                   <span className="font-cond uppercase text-[11px] tracking-widest text-slate-300">
                     Roster Summary
                   </span>
                   <StatusBadge isValid={isValid} empty={roster.length === 0} />
                 </div>
 
-                <div className="mt-2 flex items-end justify-center gap-4">
-                  <div className="flex flex-col items-center shrink-0">
+                <div className="mt-2 flex items-end gap-4">
+                  <div className="flex flex-col items-start shrink-0">
                     <label
                       htmlFor="max-points"
                       className="font-cond uppercase text-[11px] tracking-widest text-slate-300 mb-1 text-center"
@@ -2524,13 +2525,13 @@ function App() {
                     <span data-testid="army-break-point-value" className="font-display text-sm font-bold text-emerald-400 text-right tabular-nums">{armyBreakPoint}</span>
                   </div>
 
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className="font-cond uppercase text-[11px] tracking-widest text-slate-300 text-center">
+                  <div className="flex flex-col items-end shrink-0">
+                    <div className="font-cond uppercase text-[11px] tracking-widest text-slate-300 text-right">
                       Total / Limit
                     </div>
                     <div
                       data-testid="total-points"
-                      className={`font-display text-2xl font-extrabold leading-none flex items-baseline justify-center tabular-nums ${
+                      className={`font-display text-2xl font-extrabold leading-none flex items-baseline justify-end tabular-nums ${
                         totalPoints > maxPoints ? "text-amber-400" : "text-emerald-400"
                       }`}
                     >
@@ -2539,6 +2540,7 @@ function App() {
                     </div>
                   </div>
                 </div>
+              </div>
               </div>
           </div>
         </div>

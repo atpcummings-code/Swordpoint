@@ -229,6 +229,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Middle Break-Points block converted to a 2-column CSS grid (`gridTemplateColumns: 'max-content 1.75rem'`, `columnGap: 3ch`) so each value sits ~3 characters after the (longest) label and all three values stay right-aligned (verified identical right edge). Fixed value column width keeps 2-digit values from shifting.
 - Reverted the Army dropdown to `min-w-[280px]` (no max/truncation) so full army names display; header stays two-column via the earlier `flex-nowrap` + `min-w-0`.
 
+## Implemented (2026-06 session, Roster Summary alignment)
+- Wrapped the summary header + content rows in a `w-fit` container (content-width) and left-packed the content (`justify-start`). The header row is `w-full justify-between` inside that wrapper. Result: "ROSTER SUMMARY" left-aligns with the Max Points column (now `items-start`), and the StatusBadge right-aligns with the Total/Limit column (now `items-end`, `justify-end`). Box padding reduced p-3→p-2.
+- Because the badge is right-anchored inside the content-width wrapper (right edge fixed by the Total/Limit column, which is wider than the badge), it grows leftward when its text changes and never shifts right / moves layout.
+- Verified live (pixel): ROSTER SUMMARY left == Max Points label left (1026); badge right == Total/Limit right (~1519).
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
