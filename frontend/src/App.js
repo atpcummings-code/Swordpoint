@@ -2081,12 +2081,18 @@ function App() {
       });
     }
 
-    if (alliesCategory && checkedAllies.length > maxAllies) {
-      w.push({
-        level: "critical",
-        msg: `This army book only allows selecting a maximum of ${maxAllies} allied army(s) simultaneously.`,
-      });
-    }
+    // maxAlliedArmiesAllowed is enforced INDEPENDENTLY per category: only allied
+    // selections made within a category count toward that category's own limit.
+    (army?.categories || []).forEach((cat) => {
+      if (!Array.isArray(cat.alliedArmyKeys) || cat.maxAlliedArmiesAllowed == null) return;
+      const selected = checkedAllies.filter((k) => k.startsWith(`${cat.id}::`)).length;
+      if (selected > cat.maxAlliedArmiesAllowed) {
+        w.push({
+          level: "critical",
+          msg: `${cat.name || cat.id}: only ${cat.maxAlliedArmiesAllowed} allied army(s) may be selected in this category — currently ${selected}.`,
+        });
+      }
+    });
 
     computed.forEach(({ inst, calc }) => {
       if (calc.isSkirm && inst.bases > 6) {
@@ -2997,8 +3003,10 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
                 if (!ally) return null;
                 const checked = checkedAllies.includes(`${cat.id}::${ak}`);
                 const blockedByDisable = !checked && disabledAllies?.has(ak);
+                const catSelected = checkedAllies.filter((k) => k.startsWith(`${cat.id}::`)).length;
+                const catMaxAllies = cat.maxAlliedArmiesAllowed ?? Infinity;
                 const disabled =
-                  (!checked && checkedAllies.length >= maxAllies) || blockedByDisable;
+                  (!checked && catSelected >= catMaxAllies) || blockedByDisable;
                 return (
                   <label
                     key={ak}

@@ -287,6 +287,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Points are unaffected: allied commanders still carry `categoryId = Allies`, so their points count against the Allies % budget, not the main army — the commander limit remains a pure count rule.
 - Verified live (Franks, temp commander max 1, ally = Late Imperial Roman Legate type "Commander"/cat "Commanders"): 1 main + 1 allied commander → "Commanders: allows at most 1 unit choice(s) — currently 2." and the report showed "2 choices"; Legate's 15 pts appeared under the Allies budget only. Temp seed removed; App.js compiles clean.
 
+## Bug fix (2026-06 session, per-category maxAlliedArmiesAllowed)
+- `maxAlliedArmiesAllowed` was enforced globally (summing `checkedAllies.length` across all categories against a single `maxAllies`). Now enforced INDEPENDENTLY per category: the validation memo iterates `army.categories`, counts only `checkedAllies` entries prefixed `${cat.id}::`, and compares against that category's own `cat.maxAlliedArmiesAllowed`. The ally-checkbox disabling in `CatalogCategory` likewise counts only the current category's selections against `cat.maxAlliedArmiesAllowed` (was using global `checkedAllies.length >= maxAllies`).
+- Verified live (pagan_rus: Mercenaries limit 1 + Allies limit 1): picking 1 in each raised NO error and neither category disabled the other; a 2nd pick within the same category was correctly disabled.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
