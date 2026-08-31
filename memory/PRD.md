@@ -278,6 +278,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Carried onto roster instances via `makeInstance`. Validated alongside `maxCountAllowed` in the warnings memo: a red critical error fires when a unit's roster count exceeds the cap, e.g. "You have added 3 units of 'Warriors', but a maximum of 1 is allowed (1 per 333 pts of the 500 pts army limit)." Also gates the catalog +Add (`blockedAddIds`) at the cap and shows a `(Max: have of cap)` badge on the catalog card. Fully reactive to the MAX POINTS LIMIT field.
 - Verified live (temp franks rules): floor 333 → cap 3 at 1000 / 1 at 500; ceil 333 → cap 4 at 1000 / 2 at 500; +Add blocked at cap; lowering max points to 500 fired the summary error. Temp seeds removed; App.js compiles clean.
 
+## Implemented (2026-06 session, hide restricted allied units)
+- Allied units restricted by a category's `_allyUnitFilter` (`onlyUnits`/`excludesUnits`) are now filtered OUT of the allied unit list entirely instead of being rendered greyed-out/blocked. Only selectable units appear (the filter is applied via `.filter((u) => !isRestricted(u.id))` before mapping, and `isRestricted` was removed from the CatalogUnit `blocked` prop).
+- Verified live (real data, Franks → Late Imperial Roman ally which excludes foederati/catafractii_clibanarii/legionaries): the 3 excluded units are no longer rendered while the 7 available LIR units show normally.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

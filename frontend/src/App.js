@@ -3029,8 +3029,9 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
                   </div>
                   {(armies[ak].units || [])
                     .filter((u) => u.type !== "General")
+                    .filter((u) => !isRestricted(u.id))
                     .map((u) => (
-                      <CatalogUnit key={ak + u.id} unit={u} onAddUnit={onAdd} armyKey={ak} categoryOverride={cat.id} blocked={blockedAddIds?.has(u.id) || catFull || isRestricted(u.id)} rosterCounts={rosterCounts} maxPoints={maxPoints} requireHint={requireHints?.[u.id]} />
+                      <CatalogUnit key={ak + u.id} unit={u} onAddUnit={onAdd} armyKey={ak} categoryOverride={cat.id} blocked={blockedAddIds?.has(u.id) || catFull} rosterCounts={rosterCounts} maxPoints={maxPoints} requireHint={requireHints?.[u.id]} />
                     ))}
                 </div>
                 );
