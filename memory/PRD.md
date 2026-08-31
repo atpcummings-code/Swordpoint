@@ -273,6 +273,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - The real-time catalog +Add blocking (`blockedAddIds`) also honours `value`: for lessThan/lessThanOrEqual value-rules the threshold is the literal `value` (was previously mis-treated as compareWith×ratio = 0, which wrongly disabled Add).
 - Verified live (temp franks rules): bases `lessThanOrEqual 4` fired at 5 bases; units `greaterThanOrEqual 2` fired at 1 and cleared at 2; `equalTo 3` fired at 1 and cleared at 3; zero-count sides skipped. Temp seeds removed; App.js compiles clean.
 
+## Implemented (2026-06 session, unit maxPerPointsLimit)
+- New per-unit rule `maxPerPointsLimit: { pointsThreshold, rounding }`. Max copies of the unit = `armyMaxPoints / pointsThreshold` rounded by `rounding` ("floor" default, or "ceil") — uses the FIXED army points limit, not the running total. Module-level helper `maxPerPointsCap(rule, maxPoints)`.
+- Carried onto roster instances via `makeInstance`. Validated alongside `maxCountAllowed` in the warnings memo: a red critical error fires when a unit's roster count exceeds the cap, e.g. "You have added 3 units of 'Warriors', but a maximum of 1 is allowed (1 per 333 pts of the 500 pts army limit)." Also gates the catalog +Add (`blockedAddIds`) at the cap and shows a `(Max: have of cap)` badge on the catalog card. Fully reactive to the MAX POINTS LIMIT field.
+- Verified live (temp franks rules): floor 333 → cap 3 at 1000 / 1 at 500; ceil 333 → cap 4 at 1000 / 2 at 500; +Add blocked at cap; lowering max points to 500 fired the summary error. Temp seeds removed; App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

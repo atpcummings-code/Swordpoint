@@ -826,6 +826,15 @@ function effectiveMaxCount(base, maxPoints) {
   return base + extra;
 }
 
+/* maxPerPointsLimit: max copies of a unit = army max points / pointsThreshold,
+   rounded by the rule's `rounding` ("floor" default, or "ceil"). Returns null
+   when the rule is absent or malformed. */
+function maxPerPointsCap(rule, maxPoints) {
+  if (!rule || rule.pointsThreshold == null || rule.pointsThreshold <= 0) return null;
+  const raw = maxPoints / rule.pointsThreshold;
+  return rule.rounding === "ceil" ? Math.ceil(raw) : Math.floor(raw);
+}
+
 /* Category max-count scaling: the "Commanders" category gets +50% (rounded) to
    its base max when the army points limit is between 2001 and 3000. */
 function effectiveCatMax(cat, maxPoints) {
@@ -875,6 +884,7 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     secondaryRatio: null,
     minCountAllowed: unit.minCountAllowed ?? null,
     maxCountAllowed: unit.maxCountAllowed ?? null,
+    maxPerPointsLimit: unit.maxPerPointsLimit ?? null,
     requires: normalizeRequires(unit.requires, unit.id),
   };
 }
@@ -1719,6 +1729,10 @@ function App() {
       if (u.maxCountAllowed != null && (rosterCounts[u.id] || 0) >= effectiveMaxCount(u.maxCountAllowed, maxPoints)) {
         blocked.add(u.id);
       }
+      if (u.maxPerPointsLimit != null) {
+        const cap = maxPerPointsCap(u.maxPerPointsLimit, maxPoints);
+        if (cap != null && (rosterCounts[u.id] || 0) >= cap) blocked.add(u.id);
+      }
     });
     // requires: block +Add while a unit's prerequisite is unmet in the roster.
     // fixed -> need >= count of the required ids; ratio (perUnit) -> adding one
@@ -2148,6 +2162,15 @@ function App() {
           w.push({
             level: "critical",
             msg: `Validation Error: You have added ${counts[i.unitId]} units of '${i.name}', but a maximum of ${cap} is allowed.`,
+          });
+        }
+      }
+      if (i.maxPerPointsLimit != null) {
+        const cap = maxPerPointsCap(i.maxPerPointsLimit, maxPoints);
+        if (cap != null && counts[i.unitId] > cap) {
+          w.push({
+            level: "critical",
+            msg: `Validation Error: You have added ${counts[i.unitId]} units of '${i.name}', but a maximum of ${cap} is allowed (1 per ${i.maxPerPointsLimit.pointsThreshold} pts of the ${maxPoints} pts army limit).`,
           });
         }
       }
@@ -3036,6 +3059,9 @@ function CatalogUnit({ unit, onAddUnit, armyKey, categoryOverride, blocked, rost
   if (unit.maxCountAllowed != null) {
     const have = rosterCounts?.[unit.id] || 0;
     limitBadge = `(Max: ${have} of ${effectiveMaxCount(unit.maxCountAllowed, maxPoints)})`;
+  } else if (unit.maxPerPointsLimit != null) {
+    const cap = maxPerPointsCap(unit.maxPerPointsLimit, maxPoints);
+    if (cap != null) limitBadge = `(Max: ${rosterCounts?.[unit.id] || 0} of ${cap})`;
   } else if (unit.minCountAllowed != null && unit.minCountAllowed > 0) {
     limitBadge = `(Min: ${unit.minCountAllowed}+)`;
   }
