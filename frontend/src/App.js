@@ -858,6 +858,7 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     unitId: unit.id,
     sourceArmyKey,
     categoryId: categoryOverride || unit.category || (unit.type === "General" ? "commanders" : "other"),
+    sourceCategory: unit.category ?? null,
     name: unit.name,
     type: unit.type,
     description: unit.description || "",
@@ -2099,7 +2100,18 @@ function App() {
     (army.categories || []).forEach((cat) => {
       const inCat = computed.filter((c) => c.inst.categoryId === cat.id);
       if (cat.constraintType === "count") {
-        const n = inCat.length;
+        let n = inCat.length;
+        // Commander count also includes allied units whose SOURCE category is
+        // "Commanders" (they sit in the Allies category for points purposes, but
+        // count toward the main army's commander limit).
+        if (isCommanderCat(cat.id)) {
+          n += computed.filter(
+            (c) =>
+              c.inst.sourceArmyKey &&
+              c.inst.categoryId !== cat.id &&
+              isCommanderCat(c.inst.sourceCategory)
+          ).length;
+        }
         const catMax = effectiveCatMax(cat, maxPoints);
         if (n < (cat.min ?? 0))
           w.push({
@@ -2504,7 +2516,15 @@ function App() {
     return (army.categories || []).map((cat) => {
       const inCat = computed.filter((c) => c.inst.categoryId === cat.id);
       if (cat.constraintType === "count") {
-        const n = inCat.length;
+        let n = inCat.length;
+        if (isCommanderCat(cat.id)) {
+          n += computed.filter(
+            (c) =>
+              c.inst.sourceArmyKey &&
+              c.inst.categoryId !== cat.id &&
+              isCommanderCat(c.inst.sourceCategory)
+          ).length;
+        }
         const catMax = effectiveCatMax(cat, maxPoints);
         const ok = n >= (cat.min ?? 0) && (catMax == null || n <= catMax);
         return {
