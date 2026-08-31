@@ -268,6 +268,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Impl: a dedicated `equipmentBasesCount` useMemo returns `{ summary, byUnit }`; `summary` is spread into the `warnings` memo, `byUnit[instanceId]` is threaded to `RosterRow` via new `extraWarnings` prop and appended to its `requireWarnings` amber block.
 - Verified live (temp franks rule, noble_cavalry Light Armour ≤ 0.5× light_cavalry Spear bases): at noble 3 / light 3 → card + summary error fired; raising light to 6 (limit 3) cleared both. Temp seeds removed; App.js compiles clean.
 
+## Implemented (2026-06 session, armyValidation fixed value)
+- `armyValidation` rules now accept a fixed `value` field as an alternative to `compareWith`. When `value` is present, the combined count of the rule's `ids` (units when `countBy:"units"`, else summed bases) is compared directly against that number via the `expression`. Full expression range supported (lessThan, lessThanOrEqual, greaterThan, greaterThanOrEqual, equalTo — added `equalTo` alias to the EXPR map alongside existing `equal`). Failure pushes a warning to the army validation summary: "<names> <units|bases> (N) must be <label> <value>." Skipped when the left count is 0.
+- The real-time catalog +Add blocking (`blockedAddIds`) also honours `value`: for lessThan/lessThanOrEqual value-rules the threshold is the literal `value` (was previously mis-treated as compareWith×ratio = 0, which wrongly disabled Add).
+- Verified live (temp franks rules): bases `lessThanOrEqual 4` fired at 5 bases; units `greaterThanOrEqual 2` fired at 1 and cleared at 2; `equalTo 3` fired at 1 and cleared at 3; zero-count sides skipped. Temp seeds removed; App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

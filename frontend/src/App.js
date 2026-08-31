@@ -1769,8 +1769,9 @@ function App() {
       const useUnits = rule.countBy === "units";
       const srcMap = useUnits ? rosterCounts : basesByUnitId;
       const leftTotal = leftIds.reduce((s, id) => s + (srcMap[id] || 0), 0);
-      const rightSum = compareWith.reduce((s, id) => s + (srcMap[id] || 0), 0);
-      const threshold = rightSum * ratio;
+      // Fixed-value rules block against the literal value; ratio rules against compareWith×ratio.
+      const threshold =
+        rule.value != null ? rule.value : compareWith.reduce((s, id) => s + (srcMap[id] || 0), 0) * ratio;
       const test = rule.expression === "lessThan" ? (a, b) => a < b : (a, b) => a <= b;
       leftIds.forEach((id) => {
         const add = useUnits
@@ -2232,6 +2233,7 @@ function App() {
       greaterThan: { test: (a, b) => a > b, label: "greater than" },
       greaterThanOrEqual: { test: (a, b) => a >= b, label: "at least" },
       equal: { test: (a, b) => a === b, label: "equal to" },
+      equalTo: { test: (a, b) => a === b, label: "equal to" },
     };
     const byUnitBC = {};
     computed.forEach((c) => {
@@ -2374,6 +2376,19 @@ function App() {
       const src = useUnits ? counts : basesByUnit;
       const unitWord = useUnits ? "units" : "bases";
       const leftTotal = leftIds.reduce((s, id) => s + (src[id] || 0), 0);
+      // Fixed-value comparison: when `value` is present, compare the left count
+      // of units/bases directly against that number (alternative to compareWith).
+      if (rule.value != null) {
+        if (leftTotal === 0) return;
+        const exprV = EXPR[rule.expression];
+        if (exprV && !exprV.test(leftTotal, rule.value)) {
+          w.push({
+            level: "warning",
+            msg: `${leftIds.map((id) => nameOf(id)).join(" + ")} ${unitWord} (${leftTotal}) must be ${exprV.label} ${rule.value}.`,
+          });
+        }
+        return;
+      }
       const rightSum = compareWith.reduce((s, id) => s + (src[id] || 0), 0);
       if (leftTotal === 0 && rightSum === 0) return;
       const threshold = rightSum * ratio;
