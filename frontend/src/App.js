@@ -2096,6 +2096,25 @@ function App() {
       }
     });
 
+    // Optional-equipment minUnits: for each unit type in the roster, any option
+    // with `minUnits` must be selected on at least that many units of the type.
+    const rosterByUnit = {};
+    roster.forEach((i) => {
+      (rosterByUnit[i.unitId] = rosterByUnit[i.unitId] || []).push(i);
+    });
+    Object.values(rosterByUnit).forEach((list) => {
+      (list[0].optionalEquipment || []).forEach((def) => {
+        if (def.minUnits == null) return;
+        const equippedCount = list.filter((i) => i.equipped.includes(def.name)).length;
+        if (equippedCount < def.minUnits) {
+          w.push({
+            level: "warning",
+            msg: `'${def.name}' must be selected on at least ${def.minUnits} ${list[0].name} — currently ${equippedCount}.`,
+          });
+        }
+      });
+    });
+
     computed.forEach(({ inst, calc }) => {
       if (calc.isSkirm && inst.bases > 6) {
         w.push({
