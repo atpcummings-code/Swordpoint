@@ -1786,7 +1786,9 @@ function App() {
       const leftTotal = leftIds.reduce((s, id) => s + (srcMap[id] || 0), 0);
       // Fixed-value rules block against the literal value; ratio rules against compareWith×ratio.
       const threshold =
-        rule.value != null ? rule.value : compareWith.reduce((s, id) => s + (srcMap[id] || 0), 0) * ratio;
+        rule.value != null
+          ? rule.value
+          : Math.floor(compareWith.reduce((s, id) => s + (srcMap[id] || 0), 0) * ratio);
       const test = rule.expression === "lessThan" ? (a, b) => a < b : (a, b) => a <= b;
       leftIds.forEach((id) => {
         const add = useUnits
@@ -2432,7 +2434,9 @@ function App() {
       }
       const rightSum = compareWith.reduce((s, id) => s + (src[id] || 0), 0);
       if (leftTotal === 0 && rightSum === 0) return;
-      const threshold = rightSum * ratio;
+      // Floor the required count for fractional ratios: e.g. 0.5 × 1 = 0 required,
+      // only 0.5 × 2 = 1 becomes an actual requirement.
+      const threshold = Math.floor(rightSum * ratio);
       const expr = EXPR[rule.expression];
       if (expr && !expr.test(leftTotal, threshold)) {
         w.push({

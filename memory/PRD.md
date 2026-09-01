@@ -291,6 +291,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - `maxAlliedArmiesAllowed` was enforced globally (summing `checkedAllies.length` across all categories against a single `maxAllies`). Now enforced INDEPENDENTLY per category: the validation memo iterates `army.categories`, counts only `checkedAllies` entries prefixed `${cat.id}::`, and compares against that category's own `cat.maxAlliedArmiesAllowed`. The ally-checkbox disabling in `CatalogCategory` likewise counts only the current category's selections against `cat.maxAlliedArmiesAllowed` (was using global `checkedAllies.length >= maxAllies`).
 - Verified live (pagan_rus: Mercenaries limit 1 + Allies limit 1): picking 1 in each raised NO error and neither category disabled the other; a 2nd pick within the same category was correctly disabled.
 
+## Bug fix (2026-06 session, floor fractional armyValidation ratios)
+- The `compareWith` ratio rule computed `threshold = rightSum * ratio` un-rounded, so `0.5 × 1 = 0.5` wrongly required 1 unit. Now `threshold = Math.floor(rightSum * ratio)` in both the validation memo and the `+Add` blocking (`blockedAddIds`). So 0.5 × 1 hoplite = 0 (no requirement); 0.5 × 2 = 1 (one spearmen required).
+- Verified live (Classical Armies → Early Rome, real rule: spearmen ≥ 0.5× hoplites countBy units): 1 hoplite → no error; 2 hoplites → "…must be at least 0.5× … (2) = 1"; adding 1 spearmen cleared it.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
