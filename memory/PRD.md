@@ -299,6 +299,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - `minUnits` was NOT previously supported on optional equipment (only `maxUnits`/`maxEquipmentCount`, which is enforced by disabling the checkbox at the cap). Added `minUnits` validation: in the warnings memo, roster units are grouped by `unitId`; for each option with `minUnits`, if the number of that unit type's instances with the option selected is below `minUnits`, a warning is pushed: "'<option>' must be selected on at least N <Unit> — currently X." (`readOption` already preserves the field via `...e`.)
 - Verified live (temp Franks Warriors "Javelins" minUnits 2): 0 selected → warning "currently 0"; 1 selected → "currently 1"; 2 selected → cleared. Temp seed removed; App.js compiles clean.
 
+## Bug fix (2026-06 session, countBy:"bases" sub-profile tally)
+- armyValidation `countBy:"bases"` (and the `+Add` blocking tally) summed raw `i.bases`, which is 0 for sub-profile/combinedFormation units (real counts live in `subBases`), so those units contributed 0 to the base tally. Fixed by building `basesByUnit`/`basesByUnitId` from `computed` using `calc.mainBases` (sum of all VISIBLE sub-profile bases). Added `computed` to `blockedAddIds` deps.
+- Verified live (temp Franks combined-warriors rule, countBy bases): the combined unit reported "bases (2)" (Elite 1 + Warriors 1) instead of 0, and grew to "bases (4)" after adding sub-profile bases. Temp seed removed; App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

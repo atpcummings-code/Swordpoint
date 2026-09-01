@@ -1766,9 +1766,11 @@ function App() {
     // armyValidation (lessThanOrEqual / lessThan): block +Add for the rule's
     // `ids` when adding one would breach the constraint against `compareWith`
     // (× ratio). Supports countBy:"units" (entry counts) and default bases.
+    // Sub-profile units: use calc.mainBases (sum of visible sub-profile bases).
     const basesByUnitId = {};
-    roster.forEach((i) => {
-      basesByUnitId[i.unitId] = (basesByUnitId[i.unitId] || 0) + i.bases;
+    computed.forEach(({ inst, calc }) => {
+      basesByUnitId[inst.unitId] =
+        (basesByUnitId[inst.unitId] || 0) + (calc.mainBases != null ? calc.mainBases : inst.bases);
     });
     (army?.armyValidation || []).forEach((rule) => {
       if (!rule || (rule.expression !== "lessThanOrEqual" && rule.expression !== "lessThan"))
@@ -1799,7 +1801,7 @@ function App() {
     });
     return blocked;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [army, rosterCounts, roster, excludesByUnitId, allUnitDefs, maxPoints]);
+  }, [army, rosterCounts, roster, excludesByUnitId, allUnitDefs, maxPoints, computed]);
 
   /* Human hint for units whose `requires` is currently unmet — used as a
      tooltip on the disabled +Add button so players know what to field first. */
@@ -2332,10 +2334,12 @@ function App() {
     });
 
     /* --- armyValidation: compare total bases of a unit id against a ratio of
-       the combined total bases of one or more other unit ids --- */
+       the combined total bases of one or more other unit ids ---
+       Sub-profile units: sum calc.mainBases (all visible sub-profile bases). */
     const basesByUnit = {};
-    roster.forEach((i) => {
-      basesByUnit[i.unitId] = (basesByUnit[i.unitId] || 0) + i.bases;
+    computed.forEach(({ inst, calc }) => {
+      basesByUnit[inst.unitId] =
+        (basesByUnit[inst.unitId] || 0) + (calc.mainBases != null ? calc.mainBases : inst.bases);
     });
     const nameOf = (id) => {
       const all = [...(army.units || [])];
