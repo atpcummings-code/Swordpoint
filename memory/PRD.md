@@ -303,6 +303,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - armyValidation `countBy:"bases"` (and the `+Add` blocking tally) summed raw `i.bases`, which is 0 for sub-profile/combinedFormation units (real counts live in `subBases`), so those units contributed 0 to the base tally. Fixed by building `basesByUnit`/`basesByUnitId` from `computed` using `calc.mainBases` (sum of all VISIBLE sub-profile bases). Added `computed` to `blockedAddIds` deps.
 - Verified live (temp Franks combined-warriors rule, countBy bases): the combined unit reported "bases (2)" (Elite 1 + Warriors 1) instead of 0, and grew to "bases (4)" after adding sub-profile bases. Temp seed removed; App.js compiles clean.
 
+## Implemented (2026-06 session, conditional allied army display)
+- Allied army entries (`alliedArmyKeys`) now support an optional `conditions` object: `requiresUnits` (+`requiresUnitsLogic` "OR"/"AND", default "AND") shows the ally only when those roster unit ids are present; `excludesIfUnits` (+`excludesIfUnitsLogic` "OR"/"AND", default "AND") hides the ally when those unit ids are present. Absent `conditions` → always shown.
+- `normalizeData` captures the per-key rules into `category._allyConditions[key]`; module helper `allyConditionsMet(cond, rosterCounts)` evaluates them; `CatalogCategory` hides the checkbox when unmet (a currently-checked ally stays visible so it can still be deselected — avoids stranding allied units).
+- Verified live (temp Franks LIR ally, requires OR [warriors/elite], excludes OR [duke_or_king]): hidden on empty roster; shown after adding Warriors; hidden again after adding Duke or King. Temp seed removed; App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

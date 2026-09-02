@@ -745,6 +745,11 @@ function normalizeData(data) {
               c._allySupplement = c._allySupplement || {};
               c._allySupplement[key] = entry.supplement;
             }
+            // capture optional conditional-display rules for this allied army
+            if (key && entry.conditions && typeof entry.conditions === "object") {
+              c._allyConditions = c._allyConditions || {};
+              c._allyConditions[key] = entry.conditions;
+            }
             return key;
           }
           return entry;
@@ -833,6 +838,30 @@ function maxPerPointsCap(rule, maxPoints) {
   if (!rule || rule.pointsThreshold == null || rule.pointsThreshold <= 0) return null;
   const raw = maxPoints / rule.pointsThreshold;
   return rule.rounding === "ceil" ? Math.ceil(raw) : Math.floor(raw);
+}
+
+/* Conditional-display test for an allied army entry's optional `conditions`:
+   - requiresUnits: ally shows only if these unit ids are in the roster
+     (requiresUnitsLogic "OR" = any present, default "AND" = all present).
+   - excludesIfUnits: ally is hidden if these unit ids are in the roster
+     (excludesIfUnitsLogic "OR" = any present hides, default "AND" = all present).
+   Absent conditions → always shown. */
+function allyConditionsMet(cond, rosterCounts) {
+  if (!cond || typeof cond !== "object") return true;
+  const present = (id) => (rosterCounts?.[id] || 0) > 0;
+  const req = Array.isArray(cond.requiresUnits) ? cond.requiresUnits : [];
+  if (req.length) {
+    const logic = String(cond.requiresUnitsLogic || "AND").toUpperCase();
+    const ok = logic === "OR" ? req.some(present) : req.every(present);
+    if (!ok) return false;
+  }
+  const exc = Array.isArray(cond.excludesIfUnits) ? cond.excludesIfUnits : [];
+  if (exc.length) {
+    const logic = String(cond.excludesIfUnitsLogic || "AND").toUpperCase();
+    const hide = logic === "OR" ? exc.some(present) : exc.every(present);
+    if (hide) return false;
+  }
+  return true;
 }
 
 /* Category max-count scaling: the "Commanders" category gets +50% (rounded) to
@@ -3029,6 +3058,10 @@ function CatalogCategory({ cat, army, homeKey, armies, checkedAllies, maxAllies,
                 const ally = armies[ak];
                 if (!ally) return null;
                 const checked = checkedAllies.includes(`${cat.id}::${ak}`);
+                // Conditional display: honour requiresUnits / excludesIfUnits (per
+                // the ally's `conditions`). A selected ally stays visible so it can
+                // still be deselected even if its conditions later fail.
+                if (!checked && !allyConditionsMet(cat._allyConditions?.[ak], rosterCounts)) return null;
                 const blockedByDisable = !checked && disabledAllies?.has(ak);
                 const catSelected = checkedAllies.filter((k) => k.startsWith(`${cat.id}::`)).length;
                 const catMaxAllies = cat.maxAlliedArmiesAllowed ?? Infinity;
