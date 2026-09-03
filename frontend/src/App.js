@@ -915,6 +915,7 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
     minCountAllowed: unit.minCountAllowed ?? null,
     maxCountAllowed: unit.maxCountAllowed ?? null,
     maxPerPointsLimit: unit.maxPerPointsLimit ?? null,
+    basesComparison: unit.basesComparison ?? null,
     requires: normalizeRequires(unit.requires, unit.id),
   };
 }
@@ -2094,6 +2095,48 @@ function App() {
     return { summary, byUnit };
   }, [army, computed]);
 
+  /* --- unit-level basesComparison ---
+     Each instance of a unit carrying this rule must satisfy `expression` when
+     its base count is compared against EACH individual instance of every unit
+     in `compareWith`. Fails → per-card warning naming the conflicting unit and
+     both base counts. Skipped when no compareWith instances are in the roster. */
+  const basesComparisonWarnings = useMemo(() => {
+    const byUnit = {};
+    if (!army) return byUnit;
+    const CMP = {
+      lessThan: (a, b) => a < b,
+      lessThanOrEqual: (a, b) => a <= b,
+      greaterThan: (a, b) => a > b,
+      greaterThanOrEqual: (a, b) => a >= b,
+      equalTo: (a, b) => a === b,
+    };
+    const LABEL = {
+      lessThan: "less than",
+      lessThanOrEqual: "no more than",
+      greaterThan: "greater than",
+      greaterThanOrEqual: "at least",
+      equalTo: "equal to",
+    };
+    const basesOf = (c) => (c.calc.mainBases != null ? c.calc.mainBases : c.inst.bases);
+    computed.forEach((L) => {
+      const rule = L.inst.basesComparison;
+      if (!rule) return;
+      const fn = CMP[rule.expression];
+      if (!fn) return;
+      const ids = new Set(Array.isArray(rule.compareWith) ? rule.compareWith : [rule.compareWith].filter(Boolean));
+      if (ids.size === 0) return;
+      const others = computed.filter((c) => ids.has(c.inst.unitId) && c.inst.instanceId !== L.inst.instanceId);
+      if (others.length === 0) return; // no compareWith instances → no validation
+      const lb = basesOf(L);
+      const failing = others.filter((R) => !fn(lb, basesOf(R)));
+      if (failing.length === 0) return;
+      const detail = failing.map((R) => `${R.inst.name} (${basesOf(R)} bases)`).join(", ");
+      const msg = `${L.inst.name} (${lb} bases) must have ${LABEL[rule.expression]} the bases of ${detail}.`;
+      (byUnit[L.inst.instanceId] = byUnit[L.inst.instanceId] || []).push(msg);
+    });
+    return byUnit;
+  }, [army, computed]);
+
 
   const warnings = useMemo(() => {
     if (!army) return [];
@@ -2913,7 +2956,10 @@ function App() {
                   equipUsage={equipUsage}
                   rosterCounts={rosterCounts}
                   excludeConflict={excludeConflicts[inst.unitId]}
-                  extraWarnings={equipmentBasesCount.byUnit[inst.instanceId]}
+                  extraWarnings={[
+                    ...(equipmentBasesCount.byUnit[inst.instanceId] || []),
+                    ...(basesComparisonWarnings[inst.instanceId] || []),
+                  ]}
                   enabledEveryLocked={equipLocks[inst.instanceId]}
                   onChangeBases={changeBases}
                   onChangeSubBases={changeSubBases}

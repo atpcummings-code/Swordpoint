@@ -308,6 +308,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - `normalizeData` captures the per-key rules into `category._allyConditions[key]`; module helper `allyConditionsMet(cond, rosterCounts)` evaluates them; `CatalogCategory` hides the checkbox when unmet (a currently-checked ally stays visible so it can still be deselected — avoids stranding allied units).
 - Verified live (temp Franks LIR ally, requires OR [warriors/elite], excludes OR [duke_or_king]): hidden on empty roster; shown after adding Warriors; hidden again after adding Duke or King. Temp seed removed; App.js compiles clean.
 
+## Implemented (2026-06 session, unit-level basesComparison)
+- New per-unit rule `basesComparison: { expression, compareWith }`. Each instance of the unit must satisfy `expression` (greaterThan/greaterThanOrEqual/lessThan/lessThanOrEqual/equalTo) when its base count (`calc.mainBases`) is compared against EACH individual instance of every unit id in `compareWith`. Failing against any instance → an amber per-card warning naming the conflicting unit(s) and both base counts, e.g. "Warriors (5 bases) must have no more than the bases of Elite Warriors (3 bases)." Skipped when no `compareWith` instances are in the roster.
+- Impl: `makeInstance` carries `basesComparison`; a `basesComparisonWarnings` useMemo returns an instanceId→messages map, merged with `equipmentBasesCount.byUnit` into the RosterRow `extraWarnings` prop.
+- Verified live (temp Franks Warriors ≤ Elite Warriors bases): 3≤3 no warning; warriors raised to 5 → warning fired; removing Elite Warriors → skipped (no warning). Temp seed removed; App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
