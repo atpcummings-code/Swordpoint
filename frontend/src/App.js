@@ -3255,7 +3255,7 @@ function CatalogUnit({ unit, onAddUnit, armyKey, categoryOverride, blocked, rost
             </span>
           )}
         </div>
-        <p className="font-body text-xs text-slate-300 mt-0.5 line-clamp-2">{unit.description}</p>
+        <p className="font-body text-xs text-slate-300 mt-0.5">{unit.description}</p>
         {requireHint && (
           <div
             data-testid={`unit-require-hint-${unit.id}`}
