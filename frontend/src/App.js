@@ -920,23 +920,30 @@ function makeInstance(unit, sourceArmyKey, categoryOverride) {
   };
 }
 
-/* Normalize a unit's "requires" into an array of { unitId, count, name, perUnit, self }.
-   When `self` is true, the requirement targets the unit's own id (selfId). */
+/* Normalize a unit's "requires" into an array of
+   { unitIds, count, countPerUnit, name, perUnit, self }.
+   - unitIds: from `unitIds` (array) or legacy `unitId` (string/array); `self` → [selfId].
+   - count: legacy fixed minimum (default 1).
+   - countPerUnit: new per-instance requirement — this many units from `unitIds` per
+     instance of the requiring unit (any combination counts). null when unused.
+   - name: friendly label. Accepts an array (matching unitIds order, joined with " or ")
+     or a string; falls back to the unit ids. */
 function normalizeRequires(req, selfId) {
   if (!req) return [];
   const arr = Array.isArray(req) ? req : [req];
   return arr
-    .filter((r) => r && (r.unitId || r.self))
+    .filter((r) => r && (r.unitIds || r.unitId || r.self))
     .map((r) => {
-      const unitIds = r.self
-        ? [selfId]
-        : Array.isArray(r.unitId)
-        ? r.unitId
-        : [r.unitId];
+      const rawIds = r.unitIds ?? r.unitId;
+      const unitIds = r.self ? [selfId] : Array.isArray(rawIds) ? rawIds : [rawIds];
+      const name = Array.isArray(r.name)
+        ? r.name.join(" or ")
+        : r.name || (r.self ? "this unit" : unitIds.join(", "));
       return {
         unitIds,
         count: r.count ?? 1,
-        name: r.name || (r.self ? "this unit" : unitIds.join(", ")),
+        countPerUnit: r.countPerUnit ?? null,
+        name,
         perUnit: !!r.perUnit,
         self: !!r.self,
       };
@@ -1773,7 +1780,10 @@ function App() {
       normalizeRequires(u.requires, u.id).forEach((r) => {
         if (r.self) return;
         const have = r.unitIds.reduce((s, id) => s + (rosterCounts[id] || 0), 0);
-        if (r.perUnit) {
+        if (r.countPerUnit != null) {
+          const needed = ((rosterCounts[u.id] || 0) + 1) * r.countPerUnit;
+          if (have < needed) blocked.add(u.id);
+        } else if (r.perUnit) {
           const permitted = Math.floor(have / r.count);
           if ((rosterCounts[u.id] || 0) + 1 > permitted) blocked.add(u.id);
         } else if (have < r.count) {
@@ -1843,7 +1853,12 @@ function App() {
       normalizeRequires(u.requires, u.id).forEach((r) => {
         if (r.self) return;
         const have = r.unitIds.reduce((s, id) => s + (rosterCounts[id] || 0), 0);
-        if (r.perUnit) {
+        if (r.countPerUnit != null) {
+          const needed = ((rosterCounts[u.id] || 0) + 1) * r.countPerUnit;
+          if (have < needed) {
+            msgs.push(`Needs ${r.countPerUnit}× ${r.name} for each ${u.name} (need ${needed}, have ${have})`);
+          }
+        } else if (r.perUnit) {
           const permitted = Math.floor(have / r.count);
           if ((rosterCounts[u.id] || 0) + 1 > permitted) {
             msgs.push(`Needs ${r.count}× ${r.name} for each ${u.name} (have ${have})`);
@@ -2356,6 +2371,34 @@ function App() {
           w.push({
             level: "warning",
             msg: `Validation Error: This army must include at least ${r.count} units of '${i.name}' (Current: ${c}).`,
+          });
+        }
+      });
+    });
+
+    /* --- non-self "requires": prerequisite units that must be present. Legacy
+       fixed rules need `count` total; `countPerUnit` rules need that many per
+       instance of the requiring unit (any combination from unitIds counts). --- */
+    const seenReq = new Set();
+    roster.forEach((i) => {
+      if (seenReq.has(i.unitId)) return;
+      seenReq.add(i.unitId);
+      const instances = counts[i.unitId] || 0;
+      (i.requires || []).forEach((r) => {
+        if (r.self || r.perUnit) return;
+        const have = r.unitIds.reduce((s, id) => s + (counts[id] || 0), 0);
+        if (r.countPerUnit != null) {
+          const required = instances * r.countPerUnit;
+          if (have < required) {
+            w.push({
+              level: "warning",
+              msg: `Validation Error: '${i.name}' requires ${r.countPerUnit} × ${r.name} per unit — ${instances} in the roster need ${required}, but only ${have} present.`,
+            });
+          }
+        } else if (have < r.count) {
+          w.push({
+            level: "warning",
+            msg: `Validation Error: '${i.name}' requires at least ${r.count} × ${r.name} in the roster (Current: ${have}).`,
           });
         }
       });

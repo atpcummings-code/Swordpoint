@@ -313,6 +313,11 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Impl: `makeInstance` carries `basesComparison`; a `basesComparisonWarnings` useMemo returns an instanceId→messages map, merged with `equipmentBasesCount.byUnit` into the RosterRow `extraWarnings` prop.
 - Verified live (temp Franks Warriors ≤ Elite Warriors bases): 3≤3 no warning; warriors raised to 5 → warning fired; removing Elite Warriors → skipped (no warning). Temp seed removed; App.js compiles clean.
 
+## Implemented (2026-06 session, requires array + countPerUnit)
+- Extended the unit-level `requires` rule: `normalizeRequires` now accepts `unitIds` (array) in addition to legacy `unitId` (string/array), an array `name` (joined with " or " for messages, falls back to unit ids), and a new `countPerUnit` field. `countPerUnit` scales the requirement per instance of the requiring unit — N instances need `N × countPerUnit` units total from `unitIds` (any combination). Legacy `unitId`+`count` (fixed minimum) and `perUnit` (ratio) still work unchanged.
+- Consumers updated: `blockedAddIds` blocks +Add when `(instances+1) × countPerUnit > have`; `requireHints` tooltip shows "Needs Nx <names> for each <unit> (need X, have Y)"; and the warnings memo now emits a non-self requires summary warning ("'<unit>' requires N × <names> per unit — M in the roster need X, but only Y present." or the fixed-count variant).
+- Verified live (temp Franks Light Cavalry requires 2× [Warriors/Elite Warriors] per unit): +Add blocked at 0 warriors, enabled at 2, re-blocked after adding 1 LC (needs 4); removing a warriors produced the exact warning. Temp seed removed; App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
