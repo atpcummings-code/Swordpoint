@@ -813,12 +813,14 @@ function stripJsonc(text) {
 }
 
 /* "pointsRatio": max units in a category = (maxPoints / pointsThreshold) *
-   countPerThreshold, rounded per the "rounding" field. Never below 1. */
+   countPerThreshold, rounded per the "rounding" field, then + countOffset
+   (optional +/- integer). Never below 1. */
 function pointsRatioMax(cat, maxPoints) {
   const threshold = cat.pointsThreshold || 1;
   const per = cat.countPerThreshold ?? 1;
   const raw = (maxPoints / threshold) * per;
-  const n = cat.rounding === "up" ? Math.ceil(raw) : Math.floor(raw);
+  let n = cat.rounding === "up" ? Math.ceil(raw) : Math.floor(raw);
+  n += cat.countOffset ?? 0;
   return Math.max(1, n);
 }
 

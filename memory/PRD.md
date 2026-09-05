@@ -318,6 +318,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Consumers updated: `blockedAddIds` blocks +Add when `(instances+1) × countPerUnit > have`; `requireHints` tooltip shows "Needs Nx <names> for each <unit> (need X, have Y)"; and the warnings memo now emits a non-self requires summary warning ("'<unit>' requires N × <names> per unit — M in the roster need X, but only Y present." or the fixed-count variant).
 - Verified live (temp Franks Light Cavalry requires 2× [Warriors/Elite Warriors] per unit): +Add blocked at 0 warriors, enabled at 2, re-blocked after adding 1 LC (needs 4); removing a warriors produced the exact warning. Temp seed removed; App.js compiles clean.
 
+## Implemented (2026-06 session, pointsRatio countOffset)
+- Added optional `countOffset` (positive/negative integer) to the `pointsRatio` category constraint. `pointsRatioMax` now computes `(maxPoints/pointsThreshold)*countPerThreshold`, rounds per `rounding`, then adds `countOffset`, still clamped to a minimum of 1. Absent `countOffset` → unchanged behaviour. Flows through all consumers (category badge, full-set detection, count validation).
+- Verified: pure-function math (base 4 → +2=6, −1=3, −10 clamps to 1, absent=4) and live UI (temp Franks Skirmishers pointsRatio 1/250 down +2 → badge "max 6 choices (1 per 250 pts)"). Temp seed removed; App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
