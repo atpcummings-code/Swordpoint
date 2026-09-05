@@ -322,6 +322,10 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - Added optional `countOffset` (positive/negative integer) to the `pointsRatio` category constraint. `pointsRatioMax` now computes `(maxPoints/pointsThreshold)*countPerThreshold`, rounds per `rounding`, then adds `countOffset`, still clamped to a minimum of 1. Absent `countOffset` → unchanged behaviour. Flows through all consumers (category badge, full-set detection, count validation).
 - Verified: pure-function math (base 4 → +2=6, −1=3, −10 clamps to 1, absent=4) and live UI (temp Franks Skirmishers pointsRatio 1/250 down +2 → badge "max 6 choices (1 per 250 pts)"). Temp seed removed; App.js compiles clean.
 
+## Implemented (2026-06 session, pointsRatio countOffset display)
+- The Army Composition table now shows the `countOffset` for `pointsRatio` categories: appends " + N" for positive and " - N" for negative offsets, e.g. "max 5 choices (1 per 250 pts + 1)" / "max 3 choices (1 per 250 pts - 1)". No offset → unchanged.
+- Verified live (temp Franks Skirmishers +1, Cavalry -1): both rendered correctly. Temp seed removed; App.js compiles clean.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.

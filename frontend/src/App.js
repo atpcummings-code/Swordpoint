@@ -3901,7 +3901,9 @@ function ConstraintsTable({ categories, maxPoints }) {
                     ((cat.max ?? 100) / 100) * maxPoints
                   )} pts)`
                 : cat.constraintType === "pointsRatio"
-                ? `max ${pointsRatioMax(cat, maxPoints)} choices (${cat.countPerThreshold ?? 1} per ${cat.pointsThreshold} pts)`
+                ? `max ${pointsRatioMax(cat, maxPoints)} choices (${cat.countPerThreshold ?? 1} per ${cat.pointsThreshold} pts${
+                    cat.countOffset ? (cat.countOffset > 0 ? ` + ${cat.countOffset}` : ` - ${Math.abs(cat.countOffset)}`) : ""
+                  })`
                 : `${cat.min}–${effectiveCatMax(cat, maxPoints)} choices`;
             return (
               <tr key={cat.id} className="border-b border-slate-800/60 last:border-0">
