@@ -2154,6 +2154,20 @@ function App() {
     return byUnit;
   }, [army, computed]);
 
+  // Merge per-instance card warnings once (avoids a fresh inline array per row).
+  const extraWarningsByInstance = useMemo(() => {
+    const map = {};
+    const merge = (src) => {
+      Object.entries(src || {}).forEach(([id, msgs]) => {
+        (map[id] = map[id] || []).push(...msgs);
+      });
+    };
+    merge(equipmentBasesCount.byUnit);
+    merge(basesComparisonWarnings);
+    return map;
+  }, [equipmentBasesCount, basesComparisonWarnings]);
+
+
 
   const warnings = useMemo(() => {
     if (!army) return [];
@@ -3001,10 +3015,7 @@ function App() {
                   equipUsage={equipUsage}
                   rosterCounts={rosterCounts}
                   excludeConflict={excludeConflicts[inst.unitId]}
-                  extraWarnings={[
-                    ...(equipmentBasesCount.byUnit[inst.instanceId] || []),
-                    ...(basesComparisonWarnings[inst.instanceId] || []),
-                  ]}
+                  extraWarnings={extraWarningsByInstance[inst.instanceId]}
                   enabledEveryLocked={equipLocks[inst.instanceId]}
                   onChangeBases={changeBases}
                   onChangeSubBases={changeSubBases}

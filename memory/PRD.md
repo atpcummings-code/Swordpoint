@@ -337,6 +337,12 @@ DELIBERATELY SKIPPED (with rationale):
 - "Expensive" JSX filter+map (allied lists): tiny arrays rendered only when an ally is active; can't hoist a hook into a `.map` body — false positive.
 Verified: compiles clean; live smoke test (Franks + add Warriors) renders roster, validation report, and warnings correctly.
 
+## Code review fixes round 2 (2026-06 session)
+- Applied #6 (line 3004): the inline `extraWarnings={[...]}` array (new per row each render) is now built once via a memoized `extraWarningsByInstance` map merging `equipmentBasesCount.byUnit` + `basesComparisonWarnings`; RosterRow receives `extraWarningsByInstance[instanceId]`. Verified card warnings still surface (temp basesComparison test).
+- #7 index.js console: report is inaccurate — `index.js` contains no console statement (nothing to remove).
+- #7 App.js console.warn (1308/1336): kept. These were added last turn to satisfy the previous report's CRITICAL "empty catch blocks" finding; removing them would reintroduce silent failures. The two reports contradict each other here; graceful-fallback logging is the better engineering choice.
+- Re-affirmed skips (single-file mandate + auto-gen linter noise): splitting App/RosterRow, decomposing computeUnit/normalizeData/CatalogCategory/CatalogUnit/PrintSummary, bulk "missing deps" (loop-local vars), use-toast `[state]` dep, and small allied filter+map "perf" false-positives.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
