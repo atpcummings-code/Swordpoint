@@ -1286,7 +1286,7 @@ function App() {
     if (url) loadData(url);
   };
 
-  const armies = data?.armies || {};
+  const armies = useMemo(() => data?.armies || {}, [data]);
   const army = selectedArmyKey ? armies[selectedArmyKey] : null;
   // allied armies may live in other supplements; merge external ones (current file wins on key clash)
   const allyArmies = useMemo(() => ({ ...externalArmies, ...armies }), [externalArmies, armies]);
@@ -1730,7 +1730,7 @@ function App() {
       }
     });
     return defs;
-  }, [army, armies, allyArmies]);
+  }, [army, allyArmies]);
 
   const excludesByUnitId = useMemo(() => {
     const asArr = (v) => (Array.isArray(v) ? v : v ? [v] : []);
@@ -2670,7 +2670,7 @@ function App() {
     equipmentBasesCount.summary.forEach((s) => w.push(s));
 
     return w;
-  }, [army, armies, allyArmies, computed, totalPoints, maxPoints, roster, checkedAllies, alliesCategory, maxAllies, equipmentBasesCount]);
+  }, [army, allyArmies, computed, totalPoints, maxPoints, roster, checkedAllies, equipmentBasesCount]);
 
   const isValid = warnings.length === 0 && roster.length > 0;
 

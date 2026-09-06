@@ -343,6 +343,12 @@ Verified: compiles clean; live smoke test (Franks + add Warriors) renders roster
 - #7 App.js console.warn (1308/1336): kept. These were added last turn to satisfy the previous report's CRITICAL "empty catch blocks" finding; removing them would reintroduce silent failures. The two reports contradict each other here; graceful-fallback logging is the better engineering choice.
 - Re-affirmed skips (single-file mandate + auto-gen linter noise): splitting App/RosterRow, decomposing computeUnit/normalizeData/CatalogCategory/CatalogUnit/PrintSummary, bulk "missing deps" (loop-local vars), use-toast `[state]` dep, and small allied filter+map "perf" false-positives.
 
+## Build fix (2026-06 session, Netlify ESLint exhaustive-deps)
+- Line 1289: `const armies = data?.armies || {}` → `useMemo(() => data?.armies || {}, [data])` so the reference is stable and downstream memos (allyArmies etc.) don't churn.
+- Line 1733 (`allUnitDefs` memo): removed redundant `armies` dep (body only uses `army` + `allyArmies`).
+- Line 2673 (`warnings` memo): removed unused deps `armies`, `alliesCategory`, `maxAllies` (not referenced in body since per-category allied logic replaced the globals).
+- Verified: `CI=true yarn build` compiles successfully with zero ESLint warnings/errors → Netlify build unblocked.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
