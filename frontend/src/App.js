@@ -1304,8 +1304,8 @@ function App() {
         if (!res.ok) return;
         const arr = JSON.parse(stripJsonc(await res.text()));
         if (Array.isArray(arr)) setSupplementsMeta(arr);
-      } catch {
-        /* ignore — allies without an explicit supplement still work */
+      } catch (err) {
+        console.warn("Supplements catalog load failed (allies without an explicit supplement still work):", err);
       }
     })();
   }, []);
@@ -1332,8 +1332,8 @@ function App() {
             normalizeData(parsed);
             externalCacheRef.current[sk] = parsed.armies;
           }
-        } catch {
-          /* ignore individual supplement fetch failures */
+        } catch (err) {
+          console.warn(`Allied supplement "${sk}" fetch failed (skipped):`, err);
         }
       }
       if (cancelled) return;
@@ -3091,7 +3091,7 @@ function ValidationPanel({ warnings, isValid, empty }) {
     <div data-testid="validation-panel" className="mt-2 space-y-1.5">
       {warnings.map((w, i) => (
         <div
-          key={i}
+          key={`${w.level}-${w.msg}`}
           data-testid="validation-warning"
           className={`rounded-lg border px-4 py-2 font-cond text-sm flex items-start gap-2 ${
             w.level === "critical"
@@ -3406,7 +3406,7 @@ function RosterRow({
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           <span>
             {requireWarnings.map((msg, k) => (
-              <span key={k} className="block">
+              <span key={`${k}-${msg}`} className="block">
                 {msg}
               </span>
             ))}
@@ -3732,7 +3732,7 @@ function RosterRow({
                   className="bg-slate-900 border border-slate-700 rounded-md px-2 py-1 font-cond text-sm text-emerald-300 focus:outline-none focus:border-emerald-500 cursor-pointer"
                 >
                   {inst.combinedFormation.map((opt, i) => (
-                    <option key={i} value={i}>
+                    <option key={opt.label ?? i} value={i}>
                       {opt.label}
                     </option>
                   ))}
@@ -4193,7 +4193,7 @@ function PrintSummary({ army, computed, totalPoints, maxPoints, isValid, warning
           <h3 style={{ fontFamily: "Cinzel, serif", fontSize: "14px" }}>Validation Notes</h3>
           <ul style={{ fontSize: "11px", paddingLeft: "18px" }}>
             {warnings.map((w, i) => (
-              <li key={i}>{w.msg}</li>
+              <li key={`${w.msg}-${i}`}>{w.msg}</li>
             ))}
           </ul>
         </div>

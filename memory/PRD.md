@@ -326,6 +326,17 @@ Rule-engine + structure additions (App.js, verified via node logic tests):
 - The Army Composition table now shows the `countOffset` for `pointsRatio` categories: appends " + N" for positive and " - N" for negative offsets, e.g. "max 5 choices (1 per 250 pts + 1)" / "max 3 choices (1 per 250 pts - 1)". No offset → unchanged.
 - Verified live (temp Franks Skirmishers +1, Cavalry -1): both rendered correctly. Temp seed removed; App.js compiles clean.
 
+## Code review fixes (2026-06 session)
+Applied the safe, non-structural items from the code-review report:
+- Empty catch blocks (supplements catalog load + per-supplement allied fetch) now log via `console.warn` while keeping graceful fallback.
+- Replaced array-index React keys with content-based/stable keys in: validation panel list, per-card requireWarnings, combined-formation `<option>` list, and the print Validation Notes list.
+DELIBERATELY SKIPPED (with rationale):
+- Component/file splitting (App/RosterRow) and breaking up `computeUnit`/`normalizeData`/`PrintSummary`/`CatalogCategory`: violates the standing single-file `App.js` mandate and carries high regression risk on the working validation engine.
+- Bulk "missing hook dependencies" (e.g. line ~1745 "add a, add, allowed …"): these are loop-local variables inside the memos, not real deps — adding them would be out-of-scope/incorrect; the report is auto-generated and noisy here.
+- `use-toast.js` `[state]` dep: standard shadcn boilerplate; altering risks a re-subscribe loop.
+- "Expensive" JSX filter+map (allied lists): tiny arrays rendered only when an ally is active; can't hoist a hook into a `.map` body — false positive.
+Verified: compiles clean; live smoke test (Franks + add Warriors) renders roster, validation report, and warnings correctly.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
