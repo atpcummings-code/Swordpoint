@@ -349,6 +349,12 @@ Verified: compiles clean; live smoke test (Franks + add Warriors) renders roster
 - Line 2673 (`warnings` memo): removed unused deps `armies`, `alliesCategory`, `maxAllies` (not referenced in body since per-category allied logic replaced the globals).
 - Verified: `CI=true yarn build` compiles successfully with zero ESLint warnings/errors → Netlify build unblocked.
 
+## ESLint v10 upgrade (2026-06 session)
+- Upgraded standalone `eslint` 9.23.0 → **10.10.0** and `@eslint/js` → **10.0.1** (Node 20.20.2 satisfies v10's ^20.19 requirement). This drops ESLint 9's deprecated transitive deps (`@humanwhocodes/config-array`, `@humanwhocodes/object-schema`) in favour of `@eslint/config-array`/`@eslint/object-schema` — clearing the npm deprecation warnings.
+- Added `frontend/eslint.config.js` (flat config, mandatory in v10; eslintrc removed). Uses `@eslint/js` recommended + wires `eslint-plugin-react-hooks` rules; browser/es2021/node/jest globals; ignores build/dist/node_modules/etc. New v10 recommended rules (`no-useless-assignment`, `preserve-caught-error`) set to "warn" so CLI runs clean (`npx eslint src/App.js` → 0 errors, exit 0).
+- BUILD SAFETY: the Netlify/craco build lints via react-scripts' OWN nested ESLint 8.57.1 (eslint-config-react-app + `plugin:react-hooks/recommended` in craco.config.js), independent of the top-level ESLint — so the v10 bump does not affect the build. Verified `CI=true yarn build` compiles successfully; frontend healthy (200).
+- Left `eslint-plugin-react/jsx-a11y/import` (peer ^9) and `eslint-plugin-react-hooks@5.2.0` unchanged: they're consumed by the build's nested ESLint 8, and react-hooks' eslintrc `recommended` config is required by the craco build (upgrading risks breaking it). yarn emits benign peer-range warnings for these under eslint 10 (non-fatal; functionality intact).
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
