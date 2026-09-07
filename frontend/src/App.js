@@ -3664,11 +3664,7 @@ function RosterRow({
                       {p.rules.map((r) => (
                         <span
                           key={`rl-${r}`}
-                          className={`font-cond text-[11px] rounded px-2 py-0.5 border ${
-                            isSkirmRule(r)
-                              ? "border-amber-700/50 bg-amber-500/10 text-amber-300"
-                              : "border-slate-700 bg-slate-800/60 text-slate-300"
-                          }`}
+                          className="font-cond text-[11px] rounded px-2 py-0.5 border border-slate-700 bg-slate-800/60 text-slate-300"
                         >
                           {r}
                         </span>
@@ -3709,11 +3705,7 @@ function RosterRow({
               {calc.rules.map((r) => (
                 <span
                   key={r}
-                  className={`font-cond text-[11px] rounded px-2 py-0.5 border ${
-                    isSkirmRule(r)
-                      ? "border-amber-700/50 bg-amber-500/10 text-amber-300"
-                      : "border-slate-700 bg-slate-800/60 text-slate-300"
-                  }`}
+                  className="font-cond text-[11px] rounded px-2 py-0.5 border border-slate-700 bg-slate-800/60 text-slate-300"
                 >
                   {r}
                 </span>

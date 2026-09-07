@@ -355,6 +355,9 @@ Verified: compiles clean; live smoke test (Franks + add Warriors) renders roster
 - BUILD SAFETY: the Netlify/craco build lints via react-scripts' OWN nested ESLint 8.57.1 (eslint-config-react-app + `plugin:react-hooks/recommended` in craco.config.js), independent of the top-level ESLint — so the v10 bump does not affect the build. Verified `CI=true yarn build` compiles successfully; frontend healthy (200).
 - Left `eslint-plugin-react/jsx-a11y/import` (peer ^9) and `eslint-plugin-react-hooks@5.2.0` unchanged: they're consumed by the build's nested ESLint 8, and react-hooks' eslintrc `recommended` config is required by the craco build (upgrading risks breaking it). yarn emits benign peer-range warnings for these under eslint 10 (non-fatal; functionality intact).
 
+## Bug fix (2026-06 session, Skirmishers badge styling)
+- The Skirmishers special-rule badge rendered amber (`border-amber-700/50 bg-amber-500/10 text-amber-300`) via an `isSkirmRule(r)` conditional in the roster card's Special Rules lists (both the sub-profile block and the base block). Removed the conditional so it uses the standard slate badge styling like every other rule, regardless of source (base equipment, optional equipment, sub-profile rulesAdded, etc.). Verified live with Franks Skirmishers.
+
 ## Backlog / Future
 - P1: If remote JSON gets fixed, verify live-data path renders correctly.
 - P2: Save/load rosters to localStorage.
